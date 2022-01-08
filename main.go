@@ -50,12 +50,12 @@ func main() {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
-	err = sendListProductRq(conn)
+	// err = sendListProductRq(conn)
 
-	if err != nil {
-		log.Printf("Err %+vn", err)
-		return
-	}
+	// if err != nil {
+	// 	log.Printf("Err %+vn", err)
+	// 	return
+	// }
 
 	// TODO: should be check get data from FIX
 	err = sendUpdatePriceRq(conn, "33ugpDWbC2mLrYSQvu1BHfykR8bt3MVc4S3YuuXMVRH3", 169920000, 730000, "trading")
