@@ -22,6 +22,7 @@ import (
 type Application struct {
 	orderID int
 	execID  int
+	setting *quickfix.SessionSettings
 	*quickfix.MessageRouter
 }
 
@@ -81,8 +82,7 @@ type header interface {
 }
 
 func setHeader(h header) {
-	h.Set(senderCompID("TESTBUY1"))
-	h.Set(targetCompID("TESTSELL1"))
+
 }
 
 func targetCompID(v string) field.TargetCompIDField {
@@ -132,8 +132,9 @@ func start(cfgFileName string) error {
 	}
 
 	global := appSettings.SessionSettings()
-	for k := range global {
+	for k, v := range global {
 		if k.BeginString == quickfix.BeginStringFIX42 {
+			app.setting = v
 			time.Sleep(5 * time.Second)
 			msg := app.makeFix42MarketDataRequest("BCHUSD")
 			err := quickfix.SendToTarget(msg, k)
@@ -154,6 +155,16 @@ func start(cfgFileName string) error {
 }
 
 func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {
+	fmt.Printf("%+v", app.setting)
+	sender, err := app.setting.Setting("SenderCompID")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
+	target, err := app.setting.Setting("TargetCompID")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
+
 	request := fix42mdr.New(field.NewMDReqID("MARKETDATAID"),
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT),
 		field.NewMarketDepth(0),
@@ -167,7 +178,8 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
 
-	setHeader(&request.Header)
+	request.Header.Set(senderCompID(sender))
+	request.Header.Set(targetCompID(target))
 
 	return request.ToMessage()
 }

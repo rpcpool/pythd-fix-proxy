@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
@@ -9,15 +8,11 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 
-	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
-	fix44er "github.com/quickfixgo/fix44/executionreport"
-	fix44mdr "github.com/quickfixgo/fix44/marketdatarequest"
+	fix42mdr "github.com/quickfixgo/fix42/marketdatarequest"
 	"github.com/quickfixgo/quickfix"
-	"github.com/shopspring/decimal"
 )
 
 type Application struct {
@@ -30,12 +25,12 @@ func newApp() *Application {
 	app := Application{
 		MessageRouter: quickfix.NewMessageRouter(),
 	}
-	app.AddRoute(fix44er.Route(app.OnFIX44ExecutionReport))
+	app.AddRoute(fix42mdr.Route(app.OnFIX42MarketDataRequest))
 
 	return &app
 }
 
-func (a *Application) OnFIX44ExecutionReport(msg fix44er.ExecutionReport, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+func (a *Application) OnFIX42MarketDataRequest(msg fix42mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 
 	fmt.Printf(">>> OnFIX44ExecutionReport %+v", msg)
 	return nil
@@ -71,7 +66,6 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Printf(">>>>>>>>>> I GOT YOU \n")
 	fmt.Printf(">>>>>>>> FromApp: %s\n", message.String())
 	fmt.Printf("=============================== \n")
 	return nil
@@ -124,16 +118,6 @@ func start(cfgFileName string) error {
 	return nil
 }
 
-func queryString(fieldName string) string {
-	fmt.Printf("%v: ", fieldName)
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	if err := scanner.Err(); err != nil {
-		panic(err)
-	}
-	return scanner.Text()
-}
-
 type header interface {
 	Set(f quickfix.FieldWriter) *quickfix.FieldMap
 }
@@ -141,20 +125,6 @@ type header interface {
 func setHeader(h header) {
 	h.Set(senderCompID("TESTBUY1"))
 	h.Set(targetCompID("TESTSELL1"))
-}
-
-func queryTargetSubID() field.TargetSubIDField {
-	return field.NewTargetSubID(queryString("TargetSubID"))
-}
-
-func queryConfirm(prompt string) bool {
-	fmt.Println()
-	fmt.Printf("%v?: ", prompt)
-
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-
-	return strings.ToUpper(scanner.Text()) == "Y"
 }
 
 func targetCompID(v string) field.TargetCompIDField {
@@ -173,21 +143,4 @@ func (e *Application) genOrderID() field.OrderIDField {
 func (e *Application) genExecID() field.ExecIDField {
 	e.execID++
 	return field.NewExecID(strconv.Itoa(e.execID))
-}
-func (e *Application) makeExecutorReport(msg fix44mdr.MarketDataRequest) *quickfix.Message {
-	execReport := fix44er.New(
-		e.genOrderID(),
-		e.genExecID(),
-		field.NewExecType(enum.ExecType_FILL),
-		field.NewOrdStatus(enum.OrdStatus_FILLED),
-		field.NewSide(enum.Side_BUY),
-		field.NewLeavesQty(decimal.Zero, 2),
-		field.NewCumQty(decimal.Decimal{}, 2),
-		field.NewAvgPx(decimal.Decimal{}, 2),
-	)
-
-	_msg := execReport.ToMessage()
-	setHeader(&_msg.Header)
-
-	return _msg
 }
