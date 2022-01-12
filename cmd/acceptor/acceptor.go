@@ -7,16 +7,15 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
-	"github.com/shopspring/decimal"
 
 	fix42mdr "github.com/quickfixgo/fix42/marketdatarequest"
-	fix44er "github.com/quickfixgo/fix44/executionreport"
-	fix44mdr "github.com/quickfixgo/fix44/marketdatarequest"
+
+	fix42er "github.com/quickfixgo/fix42/executionreport"
 	"github.com/quickfixgo/quickfix"
 )
 
@@ -30,22 +29,17 @@ func newApp() *Application {
 	app := Application{
 		MessageRouter: quickfix.NewMessageRouter(),
 	}
-	app.AddRoute(fix44mdr.Route(app.OnFIX44MarketDataRequest))
-	app.AddRoute(fix42mdr.Route(app.OnFIX42MarketDataRequest))
+	app.AddRoute(fix42er.Route(app.OnFIX42ExecutionReport))
 
 	return &app
 }
-func (a *Application) OnFIX42MarketDataRequest(msg fix42mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+
+func (a *Application) OnFIX42ExecutionReport(msg fix42er.ExecutionReport, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	// response := a.makeExecutorReport(msg)
 	// quickfix.SendToTarget(response, sessionID)
-	fmt.Printf(">>> OnFIX44MarketDataRequest")
-	return nil
-}
-
-func (a *Application) OnFIX44MarketDataRequest(msg fix44mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	response := a.makeExecutorReport(msg)
-	quickfix.SendToTarget(response, sessionID)
-	fmt.Printf(">>> OnFIX44MarketDataRequest")
+	fmt.Printf("\n ===========OnFIX42ExecutionReport========== \n")
+	fmt.Printf("%+v", msg)
+	fmt.Printf("\n ===================== \n")
 	return nil
 }
 
@@ -82,34 +76,6 @@ func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.Sess
 
 type executor struct {
 	*quickfix.MessageRouter
-}
-
-func (e *Application) genOrderID() field.OrderIDField {
-	e.orderID++
-	return field.NewOrderID(strconv.Itoa(e.orderID))
-}
-
-func (e *Application) genExecID() field.ExecIDField {
-	e.execID++
-	return field.NewExecID(strconv.Itoa(e.execID))
-}
-
-func (e *Application) makeExecutorReport(msg fix44mdr.MarketDataRequest) *quickfix.Message {
-	execReport := fix44er.New(
-		e.genOrderID(),
-		e.genExecID(),
-		field.NewExecType(enum.ExecType_FILL),
-		field.NewOrdStatus(enum.OrdStatus_FILLED),
-		field.NewSide(enum.Side_BUY),
-		field.NewLeavesQty(decimal.Zero, 2),
-		field.NewCumQty(decimal.Decimal{}, 2),
-		field.NewAvgPx(decimal.Decimal{}, 2),
-	)
-
-	_msg := execReport.ToMessage()
-	setHeader(&_msg.Header)
-
-	return _msg
 }
 
 type header interface {
@@ -167,6 +133,19 @@ func start(cfgFileName string) error {
 		return fmt.Errorf("Unable to start Acceptor: %s\n", err)
 	}
 
+	global := appSettings.SessionSettings()
+	for k := range global {
+		if k.BeginString == quickfix.BeginStringFIX42 {
+			time.Sleep(5 * time.Second)
+			msg := app.makeFix42MarketDataRequest("BCHUSD")
+			err := quickfix.SendToTarget(msg, k)
+
+			if err != nil {
+				return fmt.Errorf("Error SendToTarget : %s,", err)
+			}
+		}
+	}
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	<-interrupt
@@ -174,4 +153,23 @@ func start(cfgFileName string) error {
 	acceptor.Stop()
 
 	return nil
+}
+
+func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {
+	request := fix42mdr.New(field.NewMDReqID("MARKETDATAID"),
+		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT),
+		field.NewMarketDepth(0),
+	)
+
+	entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
+	request.SetNoMDEntryTypes(entryTypes)
+
+	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
+	relatedSym.Add().SetSymbol(symbol)
+	request.SetNoRelatedSym(relatedSym)
+
+	setHeader(&request.Header)
+
+	return request.ToMessage()
 }

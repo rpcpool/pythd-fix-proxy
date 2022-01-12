@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -19,6 +20,7 @@ import (
 	fix44er "github.com/quickfixgo/fix44/executionreport"
 	fix44mdr "github.com/quickfixgo/fix44/marketdatarequest"
 	"github.com/quickfixgo/quickfix"
+	"github.com/shopspring/decimal"
 )
 
 func makeMarketDataRequest44() fix44mdr.MarketDataRequest {
@@ -40,6 +42,8 @@ func makeMarketDataRequest44() fix44mdr.MarketDataRequest {
 }
 
 type Application struct {
+	orderID int
+	execID  int
 	*quickfix.MessageRouter
 }
 
@@ -215,4 +219,30 @@ func printConfig(reader io.Reader) {
 	}
 
 	color.Unset()
+}
+func (e *Application) genOrderID() field.OrderIDField {
+	e.orderID++
+	return field.NewOrderID(strconv.Itoa(e.orderID))
+}
+
+func (e *Application) genExecID() field.ExecIDField {
+	e.execID++
+	return field.NewExecID(strconv.Itoa(e.execID))
+}
+func (e *Application) makeExecutorReport(msg fix44mdr.MarketDataRequest) *quickfix.Message {
+	execReport := fix44er.New(
+		e.genOrderID(),
+		e.genExecID(),
+		field.NewExecType(enum.ExecType_FILL),
+		field.NewOrdStatus(enum.OrdStatus_FILLED),
+		field.NewSide(enum.Side_BUY),
+		field.NewLeavesQty(decimal.Zero, 2),
+		field.NewCumQty(decimal.Decimal{}, 2),
+		field.NewAvgPx(decimal.Decimal{}, 2),
+	)
+
+	_msg := execReport.ToMessage()
+	setHeader(&_msg.Header)
+
+	return _msg
 }
