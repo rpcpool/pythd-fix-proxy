@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -13,7 +12,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/fatih/color"
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
 	fix44er "github.com/quickfixgo/fix44/executionreport"
@@ -107,8 +105,6 @@ func start(cfgFileName string) error {
 	logFactory := quickfix.NewScreenLogFactory()
 	app := newApp()
 
-	printConfig(bytes.NewReader(stringData))
-
 	initiator, err := quickfix.NewInitiator(app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
 	if err != nil {
 		return fmt.Errorf("Error NewInitiator : %s,", err)
@@ -169,20 +165,6 @@ func senderCompID(v string) field.SenderCompIDField {
 	return field.NewSenderCompID(v)
 }
 
-func printConfig(reader io.Reader) {
-	scanner := bufio.NewScanner(reader)
-	color.Set(color.Bold)
-	fmt.Println("Started FIX Acceptor with config:")
-	color.Unset()
-
-	color.Set(color.FgHiMagenta)
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(line)
-	}
-
-	color.Unset()
-}
 func (e *Application) genOrderID() field.OrderIDField {
 	e.orderID++
 	return field.NewOrderID(strconv.Itoa(e.orderID))
