@@ -35,8 +35,6 @@ func newApp() *Application {
 }
 
 func (a *Application) OnFIX42ExecutionReport(msg fix42er.ExecutionReport, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	// response := a.makeExecutorReport(msg)
-	// quickfix.SendToTarget(response, sessionID)
 	fmt.Printf("\n ===========OnFIX42ExecutionReport========== \n")
 	fmt.Printf("%+v", msg)
 	fmt.Printf("\n ===================== \n")
