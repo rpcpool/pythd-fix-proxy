@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/fatih/color"
 	"github.com/quickfixgo/enum"
@@ -22,24 +21,6 @@ import (
 	"github.com/quickfixgo/quickfix"
 	"github.com/shopspring/decimal"
 )
-
-func makeMarketDataRequest44() fix44mdr.MarketDataRequest {
-	request := fix44mdr.New(field.NewMDReqID("MARKETDATAID"),
-		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT),
-		field.NewMarketDepth(0),
-	)
-
-	entryTypes := fix44mdr.NewNoMDEntryTypesRepeatingGroup()
-	entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
-	request.SetNoMDEntryTypes(entryTypes)
-
-	relatedSym := fix44mdr.NewNoRelatedSymRepeatingGroup()
-	relatedSym.Add().SetSymbol("LNUX")
-	request.SetNoRelatedSym(relatedSym)
-
-	setHeader(request.Header)
-	return request
-}
 
 type Application struct {
 	orderID int
@@ -138,19 +119,6 @@ func start(cfgFileName string) error {
 		return fmt.Errorf("Error Start : %s,", err)
 	}
 
-	global := appSettings.SessionSettings()
-	for k := range global {
-		if k.BeginString == quickfix.BeginStringFIX44 {
-			time.Sleep(5 * time.Second)
-			msg := makeMarketDataRequest44()
-			err := quickfix.SendToTarget(msg, k)
-
-			if err != nil {
-				return fmt.Errorf("Error SendToTarget : %s,", err)
-			}
-		}
-	}
-
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	<-interrupt
@@ -177,11 +145,6 @@ type header interface {
 func setHeader(h header) {
 	h.Set(senderCompID("TESTBUY1"))
 	h.Set(targetCompID("TESTSELL1"))
-	// if ok := queryConfirm("Use a TargetSubID"); !ok {
-	// 	return
-	// }
-
-	// h.Set(queryTargetSubID())
 }
 
 func queryTargetSubID() field.TargetSubIDField {
