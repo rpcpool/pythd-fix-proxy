@@ -14,6 +14,7 @@ import (
 	"github.com/quickfixgo/field"
 	"github.com/shopspring/decimal"
 
+	fix42mdr "github.com/quickfixgo/fix42/marketdatarequest"
 	fix44er "github.com/quickfixgo/fix44/executionreport"
 	fix44mdr "github.com/quickfixgo/fix44/marketdatarequest"
 	"github.com/quickfixgo/quickfix"
@@ -30,8 +31,15 @@ func newApp() *Application {
 		MessageRouter: quickfix.NewMessageRouter(),
 	}
 	app.AddRoute(fix44mdr.Route(app.OnFIX44MarketDataRequest))
+	app.AddRoute(fix42mdr.Route(app.OnFIX42MarketDataRequest))
 
 	return &app
+}
+func (a *Application) OnFIX42MarketDataRequest(msg fix42mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	// response := a.makeExecutorReport(msg)
+	// quickfix.SendToTarget(response, sessionID)
+	fmt.Printf(">>> OnFIX44MarketDataRequest")
+	return nil
 }
 
 func (a *Application) OnFIX44MarketDataRequest(msg fix44mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {

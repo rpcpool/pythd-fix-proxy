@@ -20,6 +20,7 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-sqlite3 v1.14.10 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/quickfixgo/fix42 v0.0.0-20171007212724-86a4567f1c77 // indirect
 	github.com/quickfixgo/tag v0.0.0-20171007194743-cbb465760521 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
