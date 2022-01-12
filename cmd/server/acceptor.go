@@ -1,35 +1,56 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
-	"github.com/fatih/color"
+	"github.com/quickfixgo/enum"
+	"github.com/quickfixgo/field"
+	"github.com/shopspring/decimal"
+
+	fix44er "github.com/quickfixgo/fix44/executionreport"
+	fix44mdr "github.com/quickfixgo/fix44/marketdatarequest"
 	"github.com/quickfixgo/quickfix"
 )
 
-type Application struct{}
+type Application struct {
+	orderID int
+	execID  int
+	*quickfix.MessageRouter
+}
+
+func newApp() *Application {
+	app := Application{
+		MessageRouter: quickfix.NewMessageRouter(),
+	}
+	app.AddRoute(fix44mdr.Route(app.OnFIX44MarketDataRequest))
+
+	return &app
+}
+
+func (a *Application) OnFIX44MarketDataRequest(msg fix44mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	response := a.makeExecutorReport(msg)
+	quickfix.SendToTarget(response, sessionID)
+	fmt.Printf(">>> OnFIX44MarketDataRequest")
+	return nil
+}
 
 //Notification of a session begin created.
 func (a *Application) OnCreate(sessionID quickfix.SessionID) {
-	fmt.Println(">>> OnCreate", sessionID)
 }
 
 //Notification of a session successfully logging on.
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
-	fmt.Println("OnLogon", sessionID)
 }
 
 //Notification of a session logging off or disconnecting.
 func (a *Application) OnLogout(sessionID quickfix.SessionID) {
-	fmt.Println("OnLogout", sessionID)
 }
 
 //Notification of admin message being sent to target.
@@ -37,7 +58,6 @@ func (a *Application) ToAdmin(message *quickfix.Message, sessionID quickfix.Sess
 
 //Notification of app message being sent to target.
 func (a *Application) ToApp(message *quickfix.Message, sessionID quickfix.SessionID) error {
-	fmt.Println("ToApp", sessionID)
 	return nil
 }
 
@@ -48,12 +68,57 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Println("Get from APPP message in server ", message)
-	err := quickfix.SendToTarget(quickfix.NewMessage(), sessionID)
-	if err != nil {
-		fmt.Println("Err ", err)
-	}
-	return nil
+
+	return a.Route(message, sessionID)
+}
+
+type executor struct {
+	*quickfix.MessageRouter
+}
+
+func (e *Application) genOrderID() field.OrderIDField {
+	e.orderID++
+	return field.NewOrderID(strconv.Itoa(e.orderID))
+}
+
+func (e *Application) genExecID() field.ExecIDField {
+	e.execID++
+	return field.NewExecID(strconv.Itoa(e.execID))
+}
+
+func (e *Application) makeExecutorReport(msg fix44mdr.MarketDataRequest) *quickfix.Message {
+	execReport := fix44er.New(
+		e.genOrderID(),
+		e.genExecID(),
+		field.NewExecType(enum.ExecType_FILL),
+		field.NewOrdStatus(enum.OrdStatus_FILLED),
+		field.NewSide(enum.Side_BUY),
+		field.NewLeavesQty(decimal.Zero, 2),
+		field.NewCumQty(decimal.Decimal{}, 2),
+		field.NewAvgPx(decimal.Decimal{}, 2),
+	)
+
+	_msg := execReport.ToMessage()
+	setHeader(&_msg.Header)
+
+	return _msg
+}
+
+type header interface {
+	Set(f quickfix.FieldWriter) *quickfix.FieldMap
+}
+
+func setHeader(h header) {
+	h.Set(senderCompID("TESTBUY1"))
+	h.Set(targetCompID("TESTSELL1"))
+}
+
+func targetCompID(v string) field.TargetCompIDField {
+	return field.NewTargetCompID(v)
+}
+
+func senderCompID(v string) field.SenderCompIDField {
+	return field.NewSenderCompID(v)
 }
 
 var cfgFileName = flag.String("cfg", "acceptor.cfg", "Acceptor config file")
@@ -82,9 +147,9 @@ func start(cfgFileName string) error {
 	}
 
 	logFactory := quickfix.NewScreenLogFactory()
-	app := Application{}
+	app := newApp()
 
-	acceptor, err := quickfix.NewAcceptor(&app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
+	acceptor, err := quickfix.NewAcceptor(app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
 	if err != nil {
 		return fmt.Errorf("Unable to create Acceptor: %s\n", err)
 	}
@@ -93,7 +158,6 @@ func start(cfgFileName string) error {
 	if err != nil {
 		return fmt.Errorf("Unable to start Acceptor: %s\n", err)
 	}
-	printConfig(bytes.NewReader(stringData))
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
@@ -102,19 +166,4 @@ func start(cfgFileName string) error {
 	acceptor.Stop()
 
 	return nil
-}
-
-func printConfig(reader io.Reader) {
-	scanner := bufio.NewScanner(reader)
-	color.Set(color.Bold)
-	fmt.Println("Started FIX Acceptor with config:")
-	color.Unset()
-
-	color.Set(color.FgHiMagenta)
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(line)
-	}
-
-	color.Unset()
 }

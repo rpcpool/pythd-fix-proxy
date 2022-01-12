@@ -11,31 +11,62 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/fatih/color"
+	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
+	fix44er "github.com/quickfixgo/fix44/executionreport"
+	fix44mdr "github.com/quickfixgo/fix44/marketdatarequest"
 	"github.com/quickfixgo/quickfix"
 )
 
-type Application struct{}
+func makeMarketDataRequest44() fix44mdr.MarketDataRequest {
+	request := fix44mdr.New(field.NewMDReqID("MARKETDATAID"),
+		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT),
+		field.NewMarketDepth(0),
+	)
+
+	entryTypes := fix44mdr.NewNoMDEntryTypesRepeatingGroup()
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
+	request.SetNoMDEntryTypes(entryTypes)
+
+	relatedSym := fix44mdr.NewNoRelatedSymRepeatingGroup()
+	relatedSym.Add().SetSymbol("LNUX")
+	request.SetNoRelatedSym(relatedSym)
+
+	setHeader(request.Header)
+	return request
+}
+
+type Application struct {
+	*quickfix.MessageRouter
+}
+
+func newApp() *Application {
+	app := Application{
+		MessageRouter: quickfix.NewMessageRouter(),
+	}
+	app.AddRoute(fix44er.Route(app.OnFIX44ExecutionReport))
+
+	return &app
+}
+
+func (a *Application) OnFIX44ExecutionReport(msg fix44er.ExecutionReport, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+
+	fmt.Printf(">>> OnFIX44ExecutionReport %+v", msg)
+	return nil
+}
 
 //Notification of a session begin created.
 func (a *Application) OnCreate(sessionID quickfix.SessionID) {
-	fmt.Println(">>> OnCreate")
-	logon := makeNewLogon()
-	err := quickfix.SendToTarget(logon, sessionID)
-
-	if err != nil {
-		fmt.Printf("Error Sending logon: %s,", err)
-	} else {
-		fmt.Println("Logon ok: ", sessionID)
-	}
 
 }
 
 //Notification of a session successfully logging on.
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("Onlongon")
+
 }
 
 //Notification of a session logging off or disconnecting.
@@ -57,7 +88,9 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Printf("FromApp: %s\n", message.String())
+	fmt.Printf(">>>>>>>>>> I GOT YOU \n")
+	fmt.Printf(">>>>>>>> FromApp: %s\n", message.String())
+	fmt.Printf("=============================== \n")
 	return nil
 }
 
@@ -87,11 +120,11 @@ func start(cfgFileName string) error {
 	}
 
 	logFactory := quickfix.NewScreenLogFactory()
-	app := Application{}
+	app := newApp()
 
 	printConfig(bytes.NewReader(stringData))
 
-	initiator, err := quickfix.NewInitiator(&app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
+	initiator, err := quickfix.NewInitiator(app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
 	if err != nil {
 		return fmt.Errorf("Error NewInitiator : %s,", err)
 	}
@@ -100,12 +133,19 @@ func start(cfgFileName string) error {
 	if err != nil {
 		return fmt.Errorf("Error Start : %s,", err)
 	}
-	// logon := makeNewLogon()
-	// err = quickfix.Send(logon)
 
-	// if err != nil {
-	// 	return fmt.Errorf("Error Sending logon: %s,", err)
-	// }
+	global := appSettings.SessionSettings()
+	for k := range global {
+		if k.BeginString == quickfix.BeginStringFIX44 {
+			time.Sleep(5 * time.Second)
+			msg := makeMarketDataRequest44()
+			err := quickfix.SendToTarget(msg, k)
+
+			if err != nil {
+				return fmt.Errorf("Error SendToTarget : %s,", err)
+			}
+		}
+	}
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
@@ -160,34 +200,6 @@ func targetCompID(v string) field.TargetCompIDField {
 
 func senderCompID(v string) field.SenderCompIDField {
 	return field.NewSenderCompID(v)
-}
-
-func makeNewOdMsg() *quickfix.Message {
-	rawB := []byte(`8=FIX.4.49=14835=D34=108049=TESTBUY152=20180920-18:14:19.50856=TESTSELL111=63673064027889863415=USD21=238=700040=154=155=MSFT60=20180920-18:14:19.49210=092`)
-	buf := bytes.NewBuffer(rawB)
-	msg := quickfix.NewMessage()
-	err := quickfix.ParseMessage(msg, buf)
-	if err != nil {
-		panic(err)
-	}
-	setHeader(&msg.Header)
-
-	return msg.ToMessage()
-}
-
-func makeNewLogon() *quickfix.Message {
-	rawB := []byte(
-		`8=FIX.4.49=7535=A34=109249=TESTBUY152=20210920-18:24:59.64356=TESTSELL198=0108=6010=178`,
-	)
-	buf := bytes.NewBuffer(rawB)
-	msg := quickfix.NewMessage()
-	err := quickfix.ParseMessage(msg, buf)
-	if err != nil {
-		panic(err)
-	}
-	setHeader(&msg.Header)
-
-	return msg.ToMessage()
 }
 
 func printConfig(reader io.Reader) {
