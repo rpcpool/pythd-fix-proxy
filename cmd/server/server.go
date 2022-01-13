@@ -13,6 +13,7 @@ import (
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
 
+	fix42lo "github.com/quickfixgo/fix42/logon"
 	fix42mdr "github.com/quickfixgo/fix42/marketdatarequest"
 
 	fix42er "github.com/quickfixgo/fix42/executionreport"
@@ -50,6 +51,18 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 //Notification of a session successfully logging on.
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnCreate")
+	for {
+
+		time.Sleep(5 * time.Second)
+		msg := a.makeFix42MarketDataRequest("BCHUSD")
+		err := quickfix.SendToTarget(msg, sessionID)
+
+		if err != nil {
+			fmt.Printf("Error SendToTarget : %s,", err)
+		} else {
+			fmt.Printf("\nSend ok %+v \n", msg)
+		}
+	}
 }
 
 //Notification of a session logging off or disconnecting.
@@ -129,15 +142,11 @@ func start(cfgFileName string) error {
 	for k, v := range global {
 		if k.BeginString == quickfix.BeginStringFIX42 {
 			app.setting = v
-			for {
-				time.Sleep(5 * time.Second)
-				msg := app.makeFix42MarketDataRequest("BCHUSD")
-				err := quickfix.SendToTarget(msg, k)
-
-				if err != nil {
-					return fmt.Errorf("Error SendToTarget : %s,", err)
-				}
-				fmt.Printf("\nSend ok %+v \n", msg)
+			time.Sleep(5 * time.Second)
+			msg := app.makeFix42Logon()
+			err := quickfix.SendToTarget(msg, k)
+			if err != nil {
+				return fmt.Errorf("Unable SendToTarget: %s\n", err)
 			}
 		}
 	}
@@ -158,11 +167,6 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
 	}
 	target, err := app.setting.Setting("TargetCompID")
-	if err != nil {
-		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	}
-
-	password, err := app.setting.Setting("Password")
 	if err != nil {
 		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
 	}
@@ -188,6 +192,17 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	request.Header.SetString(quickfix.Tag(56), target)
 	request.Header.SetString(quickfix.Tag(49), sender)
 	request.Header.SetString(quickfix.Tag(109), clientID)
+
+	return request.ToMessage()
+}
+
+func (app *Application) makeFix42Logon() *quickfix.Message {
+	password, err := app.setting.Setting("Password")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
+
+	request := fix42lo.New(field.NewEncryptMethod(enum.EncryptMethod_NONE_OTHER), field.NewHeartBtInt(5))
 	request.Header.SetString(quickfix.Tag(554), password)
 
 	return request.ToMessage()
