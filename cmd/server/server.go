@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -51,19 +50,19 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 //Notification of a session successfully logging on.
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
-	for {
+	// for {
 
-		time.Sleep(5 * time.Second)
-		msg := a.makeFix42MarketDataRequest("BCHUSD")
-		err := quickfix.SendToTarget(msg, sessionID)
+	// 	time.Sleep(5 * time.Second)
+	// 	msg := a.makeFix42MarketDataRequest("BCHUSD")
+	// 	err := quickfix.SendToTarget(msg, sessionID)
 
-		fmt.Printf("Send logon %+v \n", msg)
-		if err != nil {
-			fmt.Printf("Error SendToTarget : %s,", err)
-		} else {
-			fmt.Printf("\nSend ok %+v \n", msg)
-		}
-	}
+	// 	fmt.Printf("Send logon %+v \n", msg)
+	// 	if err != nil {
+	// 		fmt.Printf("Error SendToTarget : %s,", err)
+	// 	} else {
+	// 		fmt.Printf("\nSend ok %+v \n", msg)
+	// 	}
+	// }
 }
 
 //Notification of a session logging off or disconnecting.
@@ -73,6 +72,12 @@ func (a *Application) OnLogout(sessionID quickfix.SessionID) {
 
 //Notification of admin message being sent to target.
 func (a *Application) ToAdmin(message *quickfix.Message, sessionID quickfix.SessionID) {
+	password, err := a.setting.Setting("Password")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
+
+	message.Header.SetString(quickfix.Tag(554), password)
 	fmt.Println("ToAdmin")
 }
 
@@ -85,6 +90,12 @@ func (a *Application) ToApp(message *quickfix.Message, sessionID quickfix.Sessio
 //Notification of admin message being received from target.
 func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Println("FromAdmin")
+	password, err := a.setting.Setting("Password")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
+
+	message.Header.SetString(quickfix.Tag(554), password)
 	return nil
 }
 
@@ -139,20 +150,20 @@ func start(cfgFileName string) error {
 		return fmt.Errorf("Unable to start Acceptor: %s\n", err)
 	}
 
-	global := appSettings.SessionSettings()
-	for k, v := range global {
-		if k.BeginString == quickfix.BeginStringFIX42 {
-			app.setting = v
-			time.Sleep(5 * time.Second)
-			msg := app.makeFix42Logon()
-			err := quickfix.SendToTarget(msg, k)
-			if err != nil {
-				return fmt.Errorf("Unable SendToTarget: %s\n", err)
-			} else {
-				fmt.Printf("SEnd logon %+v \n", msg)
-			}
-		}
-	}
+	// global := appSettings.SessionSettings()
+	// for k, v := range global {
+	// 	if k.BeginString == quickfix.BeginStringFIX42 {
+	// 		app.setting = v
+	// 		time.Sleep(5 * time.Second)
+	// 		msg := app.makeFix42Logon()
+	// 		err := quickfix.SendToTarget(msg, k)
+	// 		if err != nil {
+	// 			return fmt.Errorf("Unable SendToTarget: %s\n", err)
+	// 		} else {
+	// 			fmt.Printf("SEnd logon %+v \n", msg)
+	// 		}
+	// 	}
+	// }
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
