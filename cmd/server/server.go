@@ -112,7 +112,8 @@ func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.Sess
 	fmt.Printf("\n=============================== \n")
 	fmt.Printf(">>>>>>>> FromApp: %s\n", message.String())
 	fmt.Printf("\n=============================== \n")
-	return a.Route(message, sessionID)
+	return nil
+	// return a.Route(message, sessionID)
 }
 
 type executor struct {
@@ -162,20 +163,6 @@ func start(cfgFileName string) error {
 	if err != nil {
 		return fmt.Errorf("Unable to start Acceptor: %s\n", err)
 	}
-
-	// for k, v := range global {
-	// 	if k.BeginString == quickfix.BeginStringFIX42 {
-	// 		app.setting = v
-	// 		time.Sleep(5 * time.Second)
-	// 		msg := app.makeFix42Logon()
-	// 		err := quickfix.SendToTarget(msg, k)
-	// 		if err != nil {
-	// 			return fmt.Errorf("Unable SendToTarget: %s\n", err)
-	// 		} else {
-	// 			fmt.Printf("SEnd logon %+v \n", msg)
-	// 		}
-	// 	}
-	// }
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
