@@ -50,7 +50,7 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 
 //Notification of a session successfully logging on.
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
-	fmt.Println("OnCreate")
+	fmt.Println("OnLogon")
 	for {
 
 		time.Sleep(5 * time.Second)
