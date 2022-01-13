@@ -93,7 +93,7 @@ func senderCompID(v string) field.SenderCompIDField {
 	return field.NewSenderCompID(v)
 }
 
-var cfgFileName = flag.String("cfg", "acceptor.cfg", "Acceptor config file")
+var cfgFileName = flag.String("cfg", "config.cfg", "Acceptor config file")
 
 func main() {
 	flag.Parse()

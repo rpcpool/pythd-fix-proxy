@@ -32,7 +32,7 @@ func newApp() *Application {
 
 func (a *Application) OnFIX42MarketDataRequest(msg fix42mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 
-	fmt.Printf(">>> OnFIX44ExecutionReport %+v", msg)
+	fmt.Printf(">>> OnFIX42MarketDataRequest %+v", msg)
 	return nil
 }
 
@@ -122,10 +122,10 @@ type header interface {
 	Set(f quickfix.FieldWriter) *quickfix.FieldMap
 }
 
-func setHeader(h header) {
-	h.Set(senderCompID("TESTBUY1"))
-	h.Set(targetCompID("TESTSELL1"))
-}
+// func setHeader(h header) {
+// 	h.Set(senderCompID("TESTBUY1"))
+// 	h.Set(targetCompID("TESTSELL1"))
+// }
 
 func targetCompID(v string) field.TargetCompIDField {
 	return field.NewTargetCompID(v)
