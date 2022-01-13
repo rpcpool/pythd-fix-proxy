@@ -57,6 +57,7 @@ func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 		msg := a.makeFix42MarketDataRequest("BCHUSD")
 		err := quickfix.SendToTarget(msg, sessionID)
 
+		fmt.Printf("Send logon %+v \n", msg)
 		if err != nil {
 			fmt.Printf("Error SendToTarget : %s,", err)
 		} else {
