@@ -44,26 +44,33 @@ func (a *Application) OnFIX42ExecutionReport(msg fix42er.ExecutionReport, sessio
 
 //Notification of a session begin created.
 func (a *Application) OnCreate(sessionID quickfix.SessionID) {
+	fmt.Println("OnCreate")
 }
 
 //Notification of a session successfully logging on.
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
+	fmt.Println("OnCreate")
 }
 
 //Notification of a session logging off or disconnecting.
 func (a *Application) OnLogout(sessionID quickfix.SessionID) {
+	fmt.Println("OnLogout")
 }
 
 //Notification of admin message being sent to target.
-func (a *Application) ToAdmin(message *quickfix.Message, sessionID quickfix.SessionID) {}
+func (a *Application) ToAdmin(message *quickfix.Message, sessionID quickfix.SessionID) {
+	fmt.Println("ToAdmin")
+}
 
 //Notification of app message being sent to target.
 func (a *Application) ToApp(message *quickfix.Message, sessionID quickfix.SessionID) error {
+	fmt.Println("ToApp")
 	return nil
 }
 
 //Notification of admin message being received from target.
 func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	fmt.Println("FromAdmin")
 	return nil
 }
 
@@ -78,22 +85,6 @@ func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.Sess
 
 type executor struct {
 	*quickfix.MessageRouter
-}
-
-type header interface {
-	Set(f quickfix.FieldWriter) *quickfix.FieldMap
-}
-
-func setHeader(h header) {
-
-}
-
-func targetCompID(v string) field.TargetCompIDField {
-	return field.NewTargetCompID(v)
-}
-
-func senderCompID(v string) field.SenderCompIDField {
-	return field.NewSenderCompID(v)
 }
 
 var cfgFileName = flag.String("cfg", "config.cfg", "Acceptor config file")
