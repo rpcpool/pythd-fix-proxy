@@ -128,12 +128,12 @@ func start(cfgFileName string) error {
 	logFactory := quickfix.NewScreenLogFactory()
 	app := newApp()
 
-	acceptor, err := quickfix.NewAcceptor(app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
+	quickApp, err := quickfix.NewInitiator(app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
 	if err != nil {
 		return fmt.Errorf("Unable to create Acceptor: %s\n", err)
 	}
 
-	err = acceptor.Start()
+	err = quickApp.Start()
 	if err != nil {
 		return fmt.Errorf("Unable to start Acceptor: %s\n", err)
 	}
@@ -157,7 +157,7 @@ func start(cfgFileName string) error {
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	<-interrupt
 
-	acceptor.Stop()
+	quickApp.Stop()
 
 	return nil
 }
