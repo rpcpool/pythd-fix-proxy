@@ -70,6 +70,9 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 
+	fmt.Printf("\n=============================== \n")
+	fmt.Printf(">>>>>>>> FromApp: %s\n", message.String())
+	fmt.Printf("\n=============================== \n")
 	return a.Route(message, sessionID)
 }
 
@@ -135,12 +138,15 @@ func start(cfgFileName string) error {
 	for k, v := range global {
 		if k.BeginString == quickfix.BeginStringFIX42 {
 			app.setting = v
-			time.Sleep(5 * time.Second)
-			msg := app.makeFix42MarketDataRequest("BCHUSD")
-			err := quickfix.SendToTarget(msg, k)
+			for {
+				time.Sleep(5 * time.Second)
+				msg := app.makeFix42MarketDataRequest("BCHUSD")
+				err := quickfix.SendToTarget(msg, k)
 
-			if err != nil {
-				return fmt.Errorf("Error SendToTarget : %s,", err)
+				if err != nil {
+					return fmt.Errorf("Error SendToTarget : %s,", err)
+				}
+				fmt.Printf("\nSend ok %+v \n", msg)
 			}
 		}
 	}

@@ -43,8 +43,6 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 
 //Notification of a session successfully logging on.
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
-	fmt.Println("Onlongon")
-
 }
 
 //Notification of a session logging off or disconnecting.
@@ -66,8 +64,9 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	fmt.Printf("\n=============================== \n")
 	fmt.Printf(">>>>>>>> FromApp: %s\n", message.String())
-	fmt.Printf("=============================== \n")
+	fmt.Printf("\n=============================== \n")
 	return nil
 }
 
