@@ -15,6 +15,7 @@ import (
 
 	fix42lo "github.com/quickfixgo/fix42/logon"
 	fix42mdr "github.com/quickfixgo/fix42/marketdatarequest"
+	fix42sdr "github.com/quickfixgo/fix42/securitydefinitionrequest"
 
 	fix42er "github.com/quickfixgo/fix42/executionreport"
 	"github.com/quickfixgo/quickfix"
@@ -51,19 +52,30 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 //Notification of a session successfully logging on.
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
-	for {
-
-		time.Sleep(5 * time.Second)
-		msg := a.makeFix42MarketDataRequest("BCHUSD")
-		err := quickfix.SendToTarget(msg, sessionID)
-
-		fmt.Printf("Send logon %+v \n", msg)
-		if err != nil {
-			fmt.Printf("Error SendToTarget : %s,", err)
-		} else {
-			fmt.Printf("\nSend ok %+v \n", msg)
-		}
+	msg := fix42sdr.New(field.NewSecurityReqID("1"), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
+	msg.SetSymbol("BCHUSD")
+	err := quickfix.SendToTarget(msg, sessionID)
+	if err != nil {
+		fmt.Printf("Error SendToTarget : %s,", err)
+	} else {
+		fmt.Printf("\nSend ok %+v \n", msg)
 	}
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		for {
+			time.Sleep(5 * time.Second)
+			msg := a.makeFix42MarketDataRequest("BCHUSD")
+			err := quickfix.SendToTarget(msg, sessionID)
+
+			fmt.Printf("Send makeFix42MarketDataRequest %+v \n", msg)
+			if err != nil {
+				fmt.Printf("Error SendToTarget : %s,", err)
+			} else {
+				fmt.Printf("\nSend ok %+v \n", msg)
+			}
+		}
+	}()
 }
 
 //Notification of a session logging off or disconnecting.
