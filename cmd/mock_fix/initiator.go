@@ -98,7 +98,7 @@ func start(cfgFileName string) error {
 	logFactory := quickfix.NewScreenLogFactory()
 	app := newApp()
 
-	initiator, err := quickfix.NewInitiator(app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
+	initiator, err := quickfix.NewAcceptor(app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
 	if err != nil {
 		return fmt.Errorf("Error NewInitiator : %s,", err)
 	}

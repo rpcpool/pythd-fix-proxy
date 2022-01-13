@@ -137,8 +137,14 @@ func start(cfgFileName string) error {
 		return fmt.Errorf("Error reading cfg: %s,", err)
 	}
 
-	logFactory := quickfix.NewScreenLogFactory()
 	app := newApp()
+	global := appSettings.SessionSettings()
+	logFactory := quickfix.NewScreenLogFactory()
+	for k, v := range global {
+		if k.BeginString == quickfix.BeginStringFIX42 {
+			app.setting = v
+		}
+	}
 
 	quickApp, err := quickfix.NewInitiator(app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
 	if err != nil {
@@ -150,7 +156,6 @@ func start(cfgFileName string) error {
 		return fmt.Errorf("Unable to start Acceptor: %s\n", err)
 	}
 
-	// global := appSettings.SessionSettings()
 	// for k, v := range global {
 	// 	if k.BeginString == quickfix.BeginStringFIX42 {
 	// 		app.setting = v
