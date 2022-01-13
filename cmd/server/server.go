@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -50,19 +51,19 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 //Notification of a session successfully logging on.
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
-	// for {
+	for {
 
-	// 	time.Sleep(5 * time.Second)
-	// 	msg := a.makeFix42MarketDataRequest("BCHUSD")
-	// 	err := quickfix.SendToTarget(msg, sessionID)
+		time.Sleep(5 * time.Second)
+		msg := a.makeFix42MarketDataRequest("BCHUSD")
+		err := quickfix.SendToTarget(msg, sessionID)
 
-	// 	fmt.Printf("Send logon %+v \n", msg)
-	// 	if err != nil {
-	// 		fmt.Printf("Error SendToTarget : %s,", err)
-	// 	} else {
-	// 		fmt.Printf("\nSend ok %+v \n", msg)
-	// 	}
-	// }
+		fmt.Printf("Send logon %+v \n", msg)
+		if err != nil {
+			fmt.Printf("Error SendToTarget : %s,", err)
+		} else {
+			fmt.Printf("\nSend ok %+v \n", msg)
+		}
+	}
 }
 
 //Notification of a session logging off or disconnecting.
