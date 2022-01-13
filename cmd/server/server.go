@@ -147,6 +147,8 @@ func start(cfgFileName string) error {
 			err := quickfix.SendToTarget(msg, k)
 			if err != nil {
 				return fmt.Errorf("Unable SendToTarget: %s\n", err)
+			} else {
+				fmt.Printf("SEnd logon %+v \n", msg)
 			}
 		}
 	}
