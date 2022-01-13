@@ -103,12 +103,6 @@ func (a *Application) ToApp(message *quickfix.Message, sessionID quickfix.Sessio
 //Notification of admin message being received from target.
 func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Println("FromAdmin")
-	password, err := a.setting.Setting("Password")
-	if err != nil {
-		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	}
-
-	message.Header.SetString(quickfix.Tag(554), password)
 	return nil
 }
 
