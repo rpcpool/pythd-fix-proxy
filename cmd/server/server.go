@@ -167,6 +167,11 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
 	}
 
+	clientID, err := app.setting.Setting("ClientID")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
+
 	request := fix42mdr.New(field.NewMDReqID("MARKETDATAID"),
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT),
 		field.NewMarketDepth(0),
@@ -181,7 +186,8 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	request.SetNoRelatedSym(relatedSym)
 
 	request.Header.SetString(quickfix.Tag(56), target)
-	request.Header.SetString(quickfix.Tag(109), sender)
+	request.Header.SetString(quickfix.Tag(49), sender)
+	request.Header.SetString(quickfix.Tag(109), clientID)
 	request.Header.SetString(quickfix.Tag(554), password)
 
 	return request.ToMessage()
