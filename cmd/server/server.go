@@ -27,17 +27,22 @@ import (
 )
 
 type Application struct {
-	orderID int
-	execID  int
-	symbols map[string]string
-	mu      sync.Mutex
-	setting *quickfix.SessionSettings
+	mdReqID    int
+	securityID int
+	symbols    map[string]string
+	mu         sync.Mutex
+	setting    *quickfix.SessionSettings
 	*quickfix.MessageRouter
 }
 
-func (e *Application) genExecID() field.SecurityReqIDField {
-	e.execID++
-	return field.NewSecurityReqID(strconv.Itoa(e.execID))
+func (app *Application) genSecurityID() field.SecurityReqIDField {
+	app.securityID++
+	return field.NewSecurityReqID(strconv.Itoa(app.securityID))
+}
+
+func (app *Application) genMDID() field.MDReqIDField {
+	app.mdReqID++
+	return field.NewMDReqID(strconv.Itoa(app.mdReqID))
 }
 
 func newApp() *Application {
@@ -101,7 +106,7 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
-	msg := fix42sdr.New(a.genExecID(), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
+	msg := fix42sdr.New(a.genSecurityID(), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
 	err := quickfix.SendToTarget(msg, sessionID)
 	if err != nil {
 		fmt.Printf("Error SendToTarget : %s,", err)
@@ -232,7 +237,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string, id string) *qu
 		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
 	}
 
-	request := fix42mdr.New(field.NewMDReqID(id),
+	request := fix42mdr.New(app.genMDID(),
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT),
 		field.NewMarketDepth(0),
 	)
