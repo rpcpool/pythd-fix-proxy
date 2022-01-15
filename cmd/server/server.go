@@ -245,7 +245,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	fmt.Printf("\n MDID %+v \n", mdID)
 	request := fix42mdr.New(mdID,
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES),
-		field.NewMarketDepth(0),
+		field.NewMarketDepth(1),
 	)
 
 	entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
@@ -257,6 +257,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
+	request.Header.SetString(quickfix.Tag(265), "0")
 	request.Body.SetString(quickfix.Tag(5000), "0")
 
 	request.Header.SetString(quickfix.Tag(56), target)
