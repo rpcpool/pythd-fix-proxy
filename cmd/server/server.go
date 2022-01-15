@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -26,6 +27,8 @@ import (
 type Application struct {
 	orderID int
 	execID  int
+	symbols map[string]string
+	mu      sync.Mutex
 	setting *quickfix.SessionSettings
 	*quickfix.MessageRouter
 }
@@ -38,6 +41,7 @@ func (e *Application) genExecID() field.SecurityReqIDField {
 func newApp() *Application {
 	app := Application{
 		MessageRouter: quickfix.NewMessageRouter(),
+		symbols:       make(map[string]string),
 	}
 	app.AddRoute(fix42er.Route(app.OnFIX42ExecutionReport))
 	app.AddRoute(fix42sd.Route(app.OnFIX42SecurityDefinition))
@@ -46,9 +50,16 @@ func newApp() *Application {
 }
 
 func (a *Application) OnFIX42SecurityDefinition(msg fix42sd.SecurityDefinition, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Printf("\n ===========OnFIX42SecurityDefinition========== \n")
-	fmt.Printf("%+v", msg)
-	fmt.Printf("\n ===================== \n")
+	symbol, err := msg.GetSymbol()
+	if err != nil {
+		return err
+	}
+
+	{
+		a.mu.Lock()
+		a.symbols[symbol] = symbol
+		defer a.mu.Unlock()
+	}
 	return nil
 }
 
@@ -64,32 +75,22 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 	fmt.Println("OnCreate")
 }
 
-//Notification of a session successfully logging on.
-
-var symbols []string = []string{"BCHUSD"}
-
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
 	msg := fix42sdr.New(a.genExecID(), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
-	// msg.SetSymbol(s)
 	err := quickfix.SendToTarget(msg, sessionID)
 	if err != nil {
 		fmt.Printf("Error SendToTarget : %s,", err)
 	} else {
 		fmt.Printf("\nSend ok %+v \n", msg)
 	}
-	// for _, s := range symbols {
-	// }
-
 	go func() {
-		time.Sleep(5 * time.Second)
-		return
+		time.Sleep(10 * time.Second)
 		for {
-			time.Sleep(5 * time.Second)
-			for _, s := range symbols {
+			time.Sleep(10 * time.Second)
+			for _, s := range a.symbols {
 				msg := a.makeFix42MarketDataRequest(s)
 				err := quickfix.SendToTarget(msg, sessionID)
-
 				fmt.Printf("Send makeFix42MarketDataRequest %+v \n", msg)
 				if err != nil {
 					fmt.Printf("Error SendToTarget : %s,", err)
