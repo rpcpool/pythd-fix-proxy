@@ -55,12 +55,18 @@ func newApp() *Application {
 	app.AddRoute(fix42mdir.Route(app.OnFIX42MarketDataIncrementalRefresh))
 	app.AddRoute(fix42mdrr.Route(app.OnFIX42MarketDataRequestReject))
 	app.AddRoute(fix42mdsfr.Route(app.OnFIX42MarketDataSnapshotFullRefresh))
+	app.AddRoute(fix42mdr.Route(app.OnFIX42MarketDataRequest))
 
 	return &app
 }
 
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh%+v \n", msg)
+	return nil
+}
+
+func (a *Application) OnFIX42MarketDataRequest(msg fix42mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	fmt.Printf("ON MarketDataRequest%+v \n", msg)
 	return nil
 }
 
