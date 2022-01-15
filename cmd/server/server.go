@@ -223,7 +223,7 @@ func (app *Application) crank() {
 		<-tick
 		// NOTED: Tick only SOL now for testing
 		if symbol, ok := app.symbols["SOLUSD"]; ok {
-			msg := app.makeFix42MarketDataRequest(symbol)
+			msg := app.makeFix42MarketDataIncrementalRefresh(symbol)
 			err := quickfix.SendToTarget(msg, sessionID)
 			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg.String())
 			if err != nil {
@@ -235,6 +235,13 @@ func (app *Application) crank() {
 	}
 }
 
+func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *quickfix.Message {
+	_msg := app.makeFix42MarketDataRequest("SOLUSD")
+
+	request := fix42mdir.FromMessage(_msg)
+
+	return request.ToMessage()
+}
 func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {
 	fmt.Printf("%+v", app.setting)
 	sender, err := app.setting.Setting("SenderCompID")
