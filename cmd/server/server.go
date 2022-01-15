@@ -65,6 +65,10 @@ func newApp() *Application {
 
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh \n %+v \n", msg)
+	if price, err := msg.GetString(quickfix.Tag(270)); err != nil {
+		fmt.Println("GOT YOU >>>>>>>>>>>>>>>>>>>>> ", price)
+	}
+	panic("PANICE TO SEE ME")
 	if entries, err := msg.GetNoMDEntries(); err == nil {
 		spew.Dump(entries)
 	}
@@ -85,6 +89,9 @@ func (a *Application) OnFIX42MarketDataRequestReject(msg fix42mdrr.MarketDataReq
 func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.MarketDataSnapshotFullRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataSnapshotFullRefresh \n %+v \n", msg)
 
+	if price, err := msg.GetString(quickfix.Tag(270)); err != nil {
+		fmt.Println("GOT YOU >>>>>>>>>>>>>>>>>>>>> ", price)
+	}
 	return nil
 }
 
@@ -223,7 +230,7 @@ func (app *Application) crank() {
 		<-tick
 		// NOTED: Tick only SOL now for testing
 		if symbol, ok := app.symbols["SOLUSD"]; ok {
-			msg := app.makeFix42MarketDataIncrementalRefresh(symbol)
+			msg := app.makeFix42MarketDataRequest(symbol)
 			err := quickfix.SendToTarget(msg, sessionID)
 			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg.String())
 			if err != nil {
@@ -267,16 +274,16 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	request.SetTargetCompID(target)
 	request.Header.SetString(quickfix.Tag(109), clientID)
 
-	entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
-	entryTypes.Add().SetMDEntryType(enum.MDEntryType_FIXING_PRICE)
-	request.SetNoMDEntryTypes(entryTypes)
+	// entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
+	// entryTypes.Add().SetMDEntryType(enum.MDEntryType_FIXING_PRICE)
+	// request.SetNoMDEntryTypes(entryTypes)
 
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
 	request.Header.SetString(quickfix.Tag(5000), "0")
 
-	request.SetMDUpdateType(enum.MDUpdateType_INCREMENTAL_REFRESH)
+	request.SetMDUpdateType(enum.MDUpdateType_FULL_REFRESH)
 
 	return request.ToMessage()
 }
