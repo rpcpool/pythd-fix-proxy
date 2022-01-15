@@ -70,16 +70,16 @@ var symbols []string = []string{"BCHUSD"}
 
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
-	for _, s := range symbols {
-		msg := fix42sdr.New(a.genExecID(), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
-		msg.SetSymbol(s)
-		err := quickfix.SendToTarget(msg, sessionID)
-		if err != nil {
-			fmt.Printf("Error SendToTarget : %s,", err)
-		} else {
-			fmt.Printf("\nSend ok %+v \n", msg)
-		}
+	msg := fix42sdr.New(a.genExecID(), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
+	// msg.SetSymbol(s)
+	err := quickfix.SendToTarget(msg, sessionID)
+	if err != nil {
+		fmt.Printf("Error SendToTarget : %s,", err)
+	} else {
+		fmt.Printf("\nSend ok %+v \n", msg)
 	}
+	// for _, s := range symbols {
+	// }
 
 	go func() {
 		time.Sleep(5 * time.Second)
