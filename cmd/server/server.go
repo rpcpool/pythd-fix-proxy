@@ -81,6 +81,7 @@ func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.Market
 	fmt.Printf("ON OnFIX42MarketDataSnapshotFullRefresh %+v \n", msg)
 	price, err := msg.GetStrikePrice()
 	if err != nil {
+		fmt.Printf("\n >>> ERR: PRICE: %+v \n", price)
 		return err
 	}
 
