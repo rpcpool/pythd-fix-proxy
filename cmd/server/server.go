@@ -15,6 +15,7 @@ import (
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
 
+	"github.com/davecgh/go-spew/spew"
 	fix42er "github.com/quickfixgo/fix42/executionreport"
 	fix42lo "github.com/quickfixgo/fix42/logon"
 	fix42mdir "github.com/quickfixgo/fix42/marketdataincrementalrefresh"
@@ -64,6 +65,10 @@ func newApp() *Application {
 
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh%+v \n", msg)
+	if entries, err := msg.GetNoMDEntries(); err == nil {
+		spew.Dump(entries)
+	}
+
 	return nil
 }
 
@@ -79,9 +84,11 @@ func (a *Application) OnFIX42MarketDataRequestReject(msg fix42mdrr.MarketDataReq
 
 func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.MarketDataSnapshotFullRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataSnapshotFullRefresh %+v \n", msg)
-	price, err := msg.GetNoMDEntries()
 
-	fmt.Printf("\n PRICE: %+v ERR: %+v \n", price, err)
+	if entries, err := msg.GetNoMDEntries(); err == nil {
+		spew.Dump(entries)
+	}
+
 	return nil
 }
 
