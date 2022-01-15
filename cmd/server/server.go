@@ -223,19 +223,19 @@ func start(cfgFileName string) error {
 
 func (app *Application) makeFix42MarketDataRequest(symbol string, id string) *quickfix.Message {
 	fmt.Printf("%+v", app.setting)
-	// sender, err := app.setting.Setting("SenderCompID")
-	// if err != nil {
-	// 	panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	// }
-	// target, err := app.setting.Setting("TargetCompID")
-	// if err != nil {
-	// 	panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	// }
+	sender, err := app.setting.Setting("SenderCompID")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
+	target, err := app.setting.Setting("TargetCompID")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
 
-	// clientID, err := app.setting.Setting("ClientID")
-	// if err != nil {
-	// 	panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	// }
+	clientID, err := app.setting.Setting("ClientID")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
 
 	request := fix42mdr.New(app.genMDID(),
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT),
@@ -251,9 +251,9 @@ func (app *Application) makeFix42MarketDataRequest(symbol string, id string) *qu
 	request.SetNoRelatedSym(relatedSym)
 	request.Body.SetString(quickfix.Tag(5000), "0")
 
-	// request.Header.SetString(quickfix.Tag(56), target)
-	// request.Header.SetString(quickfix.Tag(49), sender)
-	// request.Header.SetString(quickfix.Tag(109), clientID)
+	request.Header.SetString(quickfix.Tag(56), target)
+	request.Header.SetString(quickfix.Tag(49), sender)
+	request.Header.SetString(quickfix.Tag(109), clientID)
 
 	return request.ToMessage()
 }
