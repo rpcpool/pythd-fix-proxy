@@ -268,16 +268,15 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	request.Header.SetString(quickfix.Tag(109), clientID)
 
 	entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
-	entryTypes.Add().SetMDEntryType(enum.MDEntryType_CLOSING_PRICE)
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_FIXING_PRICE)
 	request.SetNoMDEntryTypes(entryTypes)
 
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
 	request.Header.SetString(quickfix.Tag(5000), "0")
-	request.Header.SetString(quickfix.Tag(5008), "100")
 
-	request.SetMDUpdateType(enum.MDUpdateType_FULL_REFRESH)
+	request.SetMDUpdateType(enum.MDUpdateType_INCREMENTAL_REFRESH)
 
 	return request.ToMessage()
 }
