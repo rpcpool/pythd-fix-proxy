@@ -85,10 +85,6 @@ func (a *Application) OnFIX42MarketDataRequestReject(msg fix42mdrr.MarketDataReq
 func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.MarketDataSnapshotFullRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataSnapshotFullRefresh \n %+v \n", msg)
 
-	if entries, err := msg.GetNoMDEntries(); err == nil {
-		spew.Dump(entries)
-	}
-
 	return nil
 }
 
