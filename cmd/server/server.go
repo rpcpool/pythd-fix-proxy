@@ -115,19 +115,30 @@ func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	}
 	go func() {
 		time.Sleep(10 * time.Second)
-		for {
-			for k, s := range a.symbols {
-				time.Sleep(10 * time.Second)
-				msg := a.makeFix42MarketDataRequest(k, s)
-				err := quickfix.SendToTarget(msg, sessionID)
-				fmt.Printf("Send makeFix42MarketDataRequest %+v \n", msg)
-				if err != nil {
-					fmt.Printf("Error SendToTarget : %s,", err)
-				} else {
-					fmt.Printf("\nSend ok %+v \n", msg)
-				}
+
+		if symbol, ok := a.symbols["BCHUSD"]; ok {
+			msg := a.makeFix42MarketDataRequest(symbol)
+			err := quickfix.SendToTarget(msg, sessionID)
+			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg)
+			if err != nil {
+				fmt.Printf("XXX> Error SendToTarget : %s,", err)
+			} else {
+				fmt.Printf("===> Send ok %+v \n", msg)
 			}
 		}
+		// for {
+		// 	for k, s := range a.symbols {
+		// 		time.Sleep(10 * time.Second)
+		// 		msg := a.makeFix42MarketDataRequest(k, s)
+		// 		err := quickfix.SendToTarget(msg, sessionID)
+		// 		fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg)
+		// 		if err != nil {
+		// 			fmt.Printf("XXX> Error SendToTarget : %s,", err)
+		// 		} else {
+		// 			fmt.Printf("===> Send ok %+v \n", msg)
+		// 		}
+		// 	}
+		// }
 	}()
 }
 
@@ -149,7 +160,6 @@ func (a *Application) ToAdmin(message *quickfix.Message, sessionID quickfix.Sess
 
 //Notification of app message being sent to target.
 func (a *Application) ToApp(message *quickfix.Message, sessionID quickfix.SessionID) error {
-	fmt.Println("ToApp")
 	return nil
 }
 
@@ -221,7 +231,7 @@ func start(cfgFileName string) error {
 	return nil
 }
 
-func (app *Application) makeFix42MarketDataRequest(symbol string, id string) *quickfix.Message {
+func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {
 	fmt.Printf("%+v", app.setting)
 	sender, err := app.setting.Setting("SenderCompID")
 	if err != nil {
