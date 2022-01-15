@@ -114,7 +114,7 @@ func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 		if symbol, ok := a.symbols["BCHUSD"]; ok {
 			msg := a.makeFix42MarketDataRequest(symbol)
 			err := quickfix.SendToTarget(msg, sessionID)
-			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg)
+			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg.String())
 			if err != nil {
 				fmt.Printf("XXX> Error SendToTarget : %s,", err)
 			} else {
