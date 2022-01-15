@@ -29,7 +29,7 @@ import (
 type Application struct {
 	mdReqID    int
 	securityID int
-	sessionID  quickfix.SessionID
+	sessionID  chan quickfix.SessionID
 	symbols    map[string]string
 	mu         sync.Mutex
 	setting    *quickfix.SessionSettings
@@ -50,6 +50,7 @@ func newApp() *Application {
 	app := Application{
 		MessageRouter: quickfix.NewMessageRouter(),
 		symbols:       make(map[string]string),
+		sessionID:     make(chan quickfix.SessionID, 1),
 	}
 	app.AddRoute(fix42er.Route(app.OnFIX42ExecutionReport))
 	app.AddRoute(fix42sd.Route(app.OnFIX42SecurityDefinition))
@@ -110,7 +111,7 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
 	msg := fix42sdr.New(a.genSecurityID(), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
-	a.sessionID = sessionID
+	a.sessionID <- sessionID
 	err := quickfix.SendToTarget(msg, sessionID)
 	if err != nil {
 		fmt.Printf("Error SendToTarget : %s,", err)
@@ -198,33 +199,7 @@ func start(cfgFileName string) error {
 		return fmt.Errorf("Unable to start Acceptor: %s\n", err)
 	}
 
-	go func() {
-		time.Sleep(10 * time.Second)
-
-		if symbol, ok := app.symbols["BTCUSD"]; ok {
-			msg := app.makeFix42MarketDataRequest(symbol)
-			err := quickfix.SendToTarget(msg, app.sessionID)
-			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg.String())
-			if err != nil {
-				fmt.Printf("XXX> Error SendToTarget : %s,", err)
-			} else {
-				fmt.Printf("===> Send ok %+v \n", msg)
-			}
-		}
-		// for {
-		// 	for k, s := range a.symbols {
-		// 		time.Sleep(10 * time.Second)
-		// 		msg := a.makeFix42MarketDataRequest(k, s)
-		// 		err := quickfix.SendToTarget(msg, sessionID)
-		// 		fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg)
-		// 		if err != nil {
-		// 			fmt.Printf("XXX> Error SendToTarget : %s,", err)
-		// 		} else {
-		// 			fmt.Printf("===> Send ok %+v \n", msg)
-		// 		}
-		// 	}
-		// }
-	}()
+	go app.crank()
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
@@ -233,6 +208,26 @@ func start(cfgFileName string) error {
 	quickApp.Stop()
 
 	return nil
+}
+
+func (app *Application) crank() {
+	sessionID := <-app.sessionID
+
+	tick := time.Tick(10 * time.Second)
+	for {
+		<-tick
+		// NOTED: Tick only SOL now for testing
+		if symbol, ok := app.symbols["SOLUSD"]; ok {
+			msg := app.makeFix42MarketDataRequest(symbol)
+			err := quickfix.SendToTarget(msg, sessionID)
+			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg.String())
+			if err != nil {
+				fmt.Printf("XXX> Error SendToTarget : %s,", err)
+			} else {
+				fmt.Printf("===> Send ok %+v \n", msg)
+			}
+		}
+	}
 }
 
 func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {
