@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -26,6 +27,11 @@ type Application struct {
 	execID  int
 	setting *quickfix.SessionSettings
 	*quickfix.MessageRouter
+}
+
+func (e *Application) genExecID() field.SecurityReqIDField {
+	e.execID++
+	return field.NewSecurityReqID(strconv.Itoa(e.execID))
 }
 
 func newApp() *Application {
@@ -50,29 +56,37 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 }
 
 //Notification of a session successfully logging on.
+
+var symbols []string = []string{"BCHUSD"}
+
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
-	msg := fix42sdr.New(field.NewSecurityReqID("1"), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
-	msg.SetSymbol("BCHUSD")
-	err := quickfix.SendToTarget(msg, sessionID)
-	if err != nil {
-		fmt.Printf("Error SendToTarget : %s,", err)
-	} else {
-		fmt.Printf("\nSend ok %+v \n", msg)
+	for _, s := range symbols {
+		msg := fix42sdr.New(a.genExecID(), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
+		msg.SetSymbol(s)
+		err := quickfix.SendToTarget(msg, sessionID)
+		if err != nil {
+			fmt.Printf("Error SendToTarget : %s,", err)
+		} else {
+			fmt.Printf("\nSend ok %+v \n", msg)
+		}
 	}
 
 	go func() {
 		time.Sleep(5 * time.Second)
+		return
 		for {
 			time.Sleep(5 * time.Second)
-			msg := a.makeFix42MarketDataRequest("BCHUSD")
-			err := quickfix.SendToTarget(msg, sessionID)
+			for _, s := range symbols {
+				msg := a.makeFix42MarketDataRequest(s)
+				err := quickfix.SendToTarget(msg, sessionID)
 
-			fmt.Printf("Send makeFix42MarketDataRequest %+v \n", msg)
-			if err != nil {
-				fmt.Printf("Error SendToTarget : %s,", err)
-			} else {
-				fmt.Printf("\nSend ok %+v \n", msg)
+				fmt.Printf("Send makeFix42MarketDataRequest %+v \n", msg)
+				if err != nil {
+					fmt.Printf("Error SendToTarget : %s,", err)
+				} else {
+					fmt.Printf("\nSend ok %+v \n", msg)
+				}
 			}
 		}
 	}()
