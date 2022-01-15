@@ -122,10 +122,6 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-
-	fmt.Printf("\n=============================== \n")
-	fmt.Printf(">>>>>>>> FromApp: %s\n", message.String())
-	fmt.Printf("\n=============================== \n")
 	return nil
 	// return a.Route(message, sessionID)
 }
