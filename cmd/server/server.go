@@ -238,7 +238,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string, id string) *qu
 	}
 
 	request := fix42mdr.New(app.genMDID(),
-		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT),
+		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES),
 		field.NewMarketDepth(0),
 	)
 
