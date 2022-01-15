@@ -16,6 +16,7 @@ import (
 
 	fix42lo "github.com/quickfixgo/fix42/logon"
 	fix42mdr "github.com/quickfixgo/fix42/marketdatarequest"
+	fix42sd "github.com/quickfixgo/fix42/securitydefinition"
 	fix42sdr "github.com/quickfixgo/fix42/securitydefinitionrequest"
 
 	fix42er "github.com/quickfixgo/fix42/executionreport"
@@ -39,8 +40,16 @@ func newApp() *Application {
 		MessageRouter: quickfix.NewMessageRouter(),
 	}
 	app.AddRoute(fix42er.Route(app.OnFIX42ExecutionReport))
+	app.AddRoute(fix42sd.Route(app.OnFIX42SecurityDefinition))
 
 	return &app
+}
+
+func (a *Application) OnFIX42SecurityDefinition(msg fix42sd.SecurityDefinition, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	fmt.Printf("\n ===========OnFIX42SecurityDefinition========== \n")
+	fmt.Printf("%+v", msg)
+	fmt.Printf("\n ===================== \n")
+	return nil
 }
 
 func (a *Application) OnFIX42ExecutionReport(msg fix42er.ExecutionReport, sessionID quickfix.SessionID) quickfix.MessageRejectError {
@@ -122,8 +131,7 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	return nil
-	// return a.Route(message, sessionID)
+	return a.Route(message, sessionID)
 }
 
 type executor struct {
