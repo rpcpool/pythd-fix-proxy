@@ -150,7 +150,6 @@ func (a *Application) ToAdmin(message *quickfix.Message, sessionID quickfix.Sess
 	}
 
 	message.Header.SetString(quickfix.Tag(554), password)
-	fmt.Println("ToAdmin")
 }
 
 //Notification of app message being sent to target.
@@ -160,12 +159,12 @@ func (a *Application) ToApp(message *quickfix.Message, sessionID quickfix.Sessio
 
 //Notification of admin message being received from target.
 func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Println("FromAdmin")
 	return nil
 }
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	fmt.Printf("FROM APP: %+v \n", message)
 	return a.Route(message, sessionID)
 }
 
