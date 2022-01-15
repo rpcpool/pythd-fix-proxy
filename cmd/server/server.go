@@ -79,7 +79,7 @@ func (a *Application) OnFIX42MarketDataRequestReject(msg fix42mdrr.MarketDataReq
 
 func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.MarketDataSnapshotFullRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataSnapshotFullRefresh %+v \n", msg)
-	price, err := msg.GetStrikePrice()
+	price, err := msg.GetNoMDEntries()
 
 	fmt.Printf("\n PRICE: %+v ERR: %+v \n", price, err)
 	return nil
@@ -270,6 +270,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	request.Header.SetString(quickfix.Tag(49), sender)
 	request.Header.SetString(quickfix.Tag(109), clientID)
 
+	request.SetSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES)
 	return request.ToMessage()
 }
 
