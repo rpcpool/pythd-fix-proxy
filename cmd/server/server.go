@@ -64,7 +64,7 @@ func newApp() *Application {
 }
 
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh%+v \n", msg)
+	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh \n %+v \n", msg)
 	if entries, err := msg.GetNoMDEntries(); err == nil {
 		spew.Dump(entries)
 	}
@@ -83,7 +83,7 @@ func (a *Application) OnFIX42MarketDataRequestReject(msg fix42mdrr.MarketDataReq
 }
 
 func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.MarketDataSnapshotFullRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Printf("ON OnFIX42MarketDataSnapshotFullRefresh %+v \n", msg)
+	fmt.Printf("ON OnFIX42MarketDataSnapshotFullRefresh \n %+v \n", msg)
 
 	if entries, err := msg.GetNoMDEntries(); err == nil {
 		spew.Dump(entries)
