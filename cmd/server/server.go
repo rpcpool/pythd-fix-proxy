@@ -147,7 +147,6 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Printf("FROM APP: %+v \n", message)
 	return a.Route(message, sessionID)
 }
 
@@ -247,7 +246,6 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	}
 
 	mdID := app.genMDID()
-	fmt.Printf("\n MDID %+v \n", mdID)
 	request := fix42mdr.New(mdID,
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES),
 		field.NewMarketDepth(0),
@@ -256,9 +254,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
 	entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
 	request.SetNoMDEntryTypes(entryTypes)
-	fmt.Printf("\n entryTypes %+v \n", entryTypes)
 
-	fmt.Printf("\nSYSMBOL %+v \n", symbol)
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
