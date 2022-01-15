@@ -80,12 +80,8 @@ func (a *Application) OnFIX42MarketDataRequestReject(msg fix42mdrr.MarketDataReq
 func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.MarketDataSnapshotFullRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataSnapshotFullRefresh %+v \n", msg)
 	price, err := msg.GetStrikePrice()
-	if err != nil {
-		fmt.Printf("\n >>> ERR: PRICE: %+v \n", price)
-		return err
-	}
 
-	fmt.Printf("\n PRICE: %+v \n", price)
+	fmt.Printf("\n PRICE: %+v ERR: %+v \n", price, err)
 	return nil
 }
 
@@ -259,7 +255,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	)
 
 	entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
-	entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_CLOSING_PRICE)
 	request.SetNoMDEntryTypes(entryTypes)
 
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
