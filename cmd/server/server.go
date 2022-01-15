@@ -15,12 +15,14 @@ import (
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
 
+	fix42er "github.com/quickfixgo/fix42/executionreport"
 	fix42lo "github.com/quickfixgo/fix42/logon"
+	fix42mdir "github.com/quickfixgo/fix42/marketdataincrementalrefresh"
 	fix42mdr "github.com/quickfixgo/fix42/marketdatarequest"
+	fix42mdrr "github.com/quickfixgo/fix42/marketdatarequestreject"
+	fix42mdsfr "github.com/quickfixgo/fix42/marketdatasnapshotfullrefresh"
 	fix42sd "github.com/quickfixgo/fix42/securitydefinition"
 	fix42sdr "github.com/quickfixgo/fix42/securitydefinitionrequest"
-
-	fix42er "github.com/quickfixgo/fix42/executionreport"
 	"github.com/quickfixgo/quickfix"
 )
 
@@ -45,11 +47,29 @@ func newApp() *Application {
 	}
 	app.AddRoute(fix42er.Route(app.OnFIX42ExecutionReport))
 	app.AddRoute(fix42sd.Route(app.OnFIX42SecurityDefinition))
+	app.AddRoute(fix42mdir.Route(app.OnFIX42MarketDataIncrementalRefresh))
+	app.AddRoute(fix42mdrr.Route(app.OnFIX42MarketDataRequestReject))
+	app.AddRoute(fix42mdsfr.Route(app.OnFIX42MarketDataSnapshotFullRefresh))
 
 	return &app
 }
 
+func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh%+v \n", msg)
+	return nil
+}
+
+func (a *Application) OnFIX42MarketDataRequestReject(msg fix42mdrr.MarketDataRequestReject, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	fmt.Printf("ON OnFIX42MarketDataRequestReject %+v \n", msg)
+	return nil
+}
+
+func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.MarketDataSnapshotFullRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	return nil
+}
+
 func (a *Application) OnFIX42SecurityDefinition(msg fix42sd.SecurityDefinition, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	fmt.Printf("ON OnFIX42SecurityDefinition%+v \n", msg)
 	symbol, err := msg.GetSymbol()
 	if err != nil {
 		return err
@@ -87,8 +107,8 @@ func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	go func() {
 		time.Sleep(10 * time.Second)
 		for {
-			time.Sleep(10 * time.Second)
 			for _, s := range a.symbols {
+				time.Sleep(10 * time.Second)
 				msg := a.makeFix42MarketDataRequest(s)
 				err := quickfix.SendToTarget(msg, sessionID)
 				fmt.Printf("Send makeFix42MarketDataRequest %+v \n", msg)
