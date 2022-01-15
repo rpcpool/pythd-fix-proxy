@@ -98,6 +98,9 @@ func (a *Application) OnFIX42SecurityDefinition(msg fix42sd.SecurityDefinition, 
 		return err
 	}
 
+	strike, err := msg.GetStrikePrice()
+	fmt.Printf(" \n STRIKE: %+v err : %+v", strike, err)
+
 	{
 		a.mu.Lock()
 		a.symbols[symbol] = symbol
