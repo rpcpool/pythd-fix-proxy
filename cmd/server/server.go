@@ -248,9 +248,10 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 		field.NewMarketDepth(0),
 	)
 
-	// entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
-	// entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
-	// request.SetNoMDEntryTypes(entryTypes)
+	entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
+	request.SetNoMDEntryTypes(entryTypes)
+	fmt.Printf("\n entryTypes %+v \n", entryTypes)
 
 	fmt.Printf("\nSYSMBOL %+v \n", symbol)
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
