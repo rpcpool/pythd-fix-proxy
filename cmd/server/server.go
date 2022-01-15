@@ -241,7 +241,9 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
 	}
 
-	request := fix42mdr.New(app.genMDID(),
+	mdID := app.genMDID()
+	fmt.Printf("\n MDID %+v \n", mdID)
+	request := fix42mdr.New(mdID,
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES),
 		field.NewMarketDepth(0),
 	)
