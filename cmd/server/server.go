@@ -275,8 +275,9 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
 	request.Header.SetString(quickfix.Tag(5000), "0")
+	request.Header.SetString(quickfix.Tag(5008), "100")
 
-	request.SetMDUpdateType(enum.MDUpdateType_INCREMENTAL_REFRESH)
+	request.SetMDUpdateType(enum.MDUpdateType_FULL_REFRESH)
 
 	return request.ToMessage()
 }
