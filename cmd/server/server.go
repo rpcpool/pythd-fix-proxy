@@ -263,14 +263,13 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	// request.SetString(quickfix.Tag(55), symbol)
 	request.SetNoRelatedSym(relatedSym)
 	request.Header.SetString(quickfix.Tag(5000), "0")
-	request.SetMDUpdateType(enum.MDUpdateType_FULL_REFRESH)
+	request.SetMDUpdateType(enum.MDUpdateType_INCREMENTAL_REFRESH)
 	// request.Body.SetString(quickfix.Tag(35), "X")
 
 	request.Header.SetString(quickfix.Tag(56), target)
 	request.Header.SetString(quickfix.Tag(49), sender)
 	request.Header.SetString(quickfix.Tag(109), clientID)
 
-	request.SetSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES)
 	return request.ToMessage()
 }
 
