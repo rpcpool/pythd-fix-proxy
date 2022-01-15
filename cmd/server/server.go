@@ -74,11 +74,14 @@ func (a *Application) OnFIX42SecurityDefinition(msg fix42sd.SecurityDefinition, 
 		return err
 	}
 
-	// msg.GetSecurityReqID()
+	sReqID, err := msg.GetSecurityReqID()
+	if err != nil {
+		return err
+	}
 
 	{
 		a.mu.Lock()
-		a.symbols[symbol] = symbol
+		a.symbols[symbol] = sReqID
 		defer a.mu.Unlock()
 	}
 	return nil
@@ -108,9 +111,9 @@ func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	go func() {
 		time.Sleep(10 * time.Second)
 		for {
-			for _, s := range a.symbols {
+			for k, s := range a.symbols {
 				time.Sleep(10 * time.Second)
-				msg := a.makeFix42MarketDataRequest(s)
+				msg := a.makeFix42MarketDataRequest(k, s)
 				err := quickfix.SendToTarget(msg, sessionID)
 				fmt.Printf("Send makeFix42MarketDataRequest %+v \n", msg)
 				if err != nil {
@@ -213,7 +216,7 @@ func start(cfgFileName string) error {
 	return nil
 }
 
-func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {
+func (app *Application) makeFix42MarketDataRequest(symbol string, id string) *quickfix.Message {
 	fmt.Printf("%+v", app.setting)
 	sender, err := app.setting.Setting("SenderCompID")
 	if err != nil {
@@ -229,7 +232,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
 	}
 
-	request := fix42mdr.New(field.NewMDReqID("MARKETDATAID"),
+	request := fix42mdr.New(field.NewMDReqID(id),
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT),
 		field.NewMarketDepth(0),
 	)
