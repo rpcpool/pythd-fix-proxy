@@ -79,14 +79,9 @@ func (a *Application) OnFIX42SecurityDefinition(msg fix42sd.SecurityDefinition, 
 		return err
 	}
 
-	sReqID, err := msg.GetSecurityReqID()
-	if err != nil {
-		return err
-	}
-
 	{
 		a.mu.Lock()
-		a.symbols[symbol] = sReqID
+		a.symbols[symbol] = symbol
 		defer a.mu.Unlock()
 	}
 	return nil
