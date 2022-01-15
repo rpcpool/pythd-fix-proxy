@@ -242,10 +242,11 @@ func (app *Application) makeFix42MarketDataRequest(symbol string, id string) *qu
 		field.NewMarketDepth(0),
 	)
 
-	entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
-	entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
-	request.SetNoMDEntryTypes(entryTypes)
+	// entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
+	// entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
+	// request.SetNoMDEntryTypes(entryTypes)
 
+	fmt.Printf("\nSYSMBOL %+v \n", symbol)
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
