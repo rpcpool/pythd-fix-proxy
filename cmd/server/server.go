@@ -69,11 +69,12 @@ func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.Market
 }
 
 func (a *Application) OnFIX42SecurityDefinition(msg fix42sd.SecurityDefinition, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Printf("ON OnFIX42SecurityDefinition%+v \n", msg)
 	symbol, err := msg.GetSymbol()
 	if err != nil {
 		return err
 	}
+
+	// msg.GetSecurityReqID()
 
 	{
 		a.mu.Lock()
@@ -240,6 +241,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
+	request.Body.SetString(quickfix.Tag(5000), "0")
 
 	request.Header.SetString(quickfix.Tag(56), target)
 	request.Header.SetString(quickfix.Tag(49), sender)
