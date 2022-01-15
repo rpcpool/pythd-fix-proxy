@@ -117,7 +117,7 @@ func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	go func() {
 		time.Sleep(10 * time.Second)
 
-		if symbol, ok := a.symbols["BCHUSD"]; ok {
+		if symbol, ok := a.symbols["BTCUSD"]; ok {
 			msg := a.makeFix42MarketDataRequest(symbol)
 			err := quickfix.SendToTarget(msg, sessionID)
 			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg.String())
