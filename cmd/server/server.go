@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -212,7 +211,7 @@ func start(cfgFileName string) error {
 		return fmt.Errorf("Unable to start Acceptor: %s\n", err)
 	}
 
-	go app.crank()
+	go app.subscribe()
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
@@ -223,33 +222,35 @@ func start(cfgFileName string) error {
 	return nil
 }
 
-func (app *Application) crank() {
+func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
 
-	tick := time.Tick(30 * time.Second)
-	for {
-		<-tick
-		// NOTED: Tick only SOL now for testing
-		if symbol, ok := app.symbols["BCHUSD"]; ok {
-			msg := app.makeFix42MarketDataRequest(symbol)
-			err := quickfix.SendToTarget(msg, sessionID)
-			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg.String())
-			if err != nil {
-				fmt.Printf("XXX> Error SendToTarget : %s,", err)
-			} else {
-				fmt.Printf("===> Send ok %+v \n", msg)
-			}
+	// NOTED: Tick only BTC now for testing
+	if symbol, ok := app.symbols["BTCUSD"]; ok {
+		msg := app.makeFix42MarketDataRequest(symbol)
+		err := quickfix.SendToTarget(msg, sessionID)
+		if err != nil {
+			fmt.Printf("XXX> Error SendToTarget : %v,", err)
+		}
+	}
+
+	if symbol, ok := app.symbols["BTCUSD"]; ok {
+		msg := app.makeFix42MarketDataIncrementalRefresh(symbol)
+		err := quickfix.SendToTarget(msg, sessionID)
+		if err != nil {
+			fmt.Printf("XXX> Error SendToTarget : %v,", err)
 		}
 	}
 }
 
 func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *quickfix.Message {
-	_msg := app.makeFix42MarketDataRequest("SOLUSD")
+	_msg := app.makeFix42MarketDataRequest(symbol)
 
 	request := fix42mdir.FromMessage(_msg)
 
 	return request.ToMessage()
 }
+
 func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {
 	fmt.Printf("%+v", app.setting)
 	sender, err := app.setting.Setting("SenderCompID")
