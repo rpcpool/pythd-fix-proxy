@@ -122,7 +122,7 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
-	msg := fix42sdr.New(a.genSecurityID(), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
+	msg := fix42sdr.New(a.genSecurityID(), field.NewSecurityRequestType(enum.SecurityRequestType_REQUEST_LIST_SECURITIES))
 	a.sessionID <- sessionID
 	err := quickfix.SendToTarget(msg, sessionID)
 	if err != nil {
@@ -159,7 +159,6 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Printf("\n>>>>>>>> [%+v] \n", message)
 	return a.Route(message, sessionID)
 }
 
@@ -234,13 +233,13 @@ func (app *Application) subscribe() {
 		}
 	}
 
-	if symbol, ok := app.symbols["BTCUSD"]; ok {
-		msg := app.makeFix42MarketDataIncrementalRefresh(symbol)
-		err := quickfix.SendToTarget(msg, sessionID)
-		if err != nil {
-			fmt.Printf("XXX> Error SendToTarget : %v,", err)
-		}
-	}
+	// if symbol, ok := app.symbols["BTCUSD"]; ok {
+	// 	msg := app.makeFix42MarketDataIncrementalRefresh(symbol)
+	// 	err := quickfix.SendToTarget(msg, sessionID)
+	// 	if err != nil {
+	// 		fmt.Printf("XXX> Error SendToTarget : %v,", err)
+	// 	}
+	// }
 }
 
 func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *quickfix.Message {
