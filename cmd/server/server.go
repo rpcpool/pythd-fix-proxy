@@ -230,7 +230,7 @@ func (app *Application) crank() {
 	for {
 		<-tick
 		// NOTED: Tick only SOL now for testing
-		if symbol, ok := app.symbols["SOLUSD"]; ok {
+		if symbol, ok := app.symbols["BCHUSD"]; ok {
 			msg := app.makeFix42MarketDataRequest(symbol)
 			err := quickfix.SendToTarget(msg, sessionID)
 			fmt.Printf("Send makeFix42MarketDataRequest %+v ", msg.String())
@@ -252,28 +252,28 @@ func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *qu
 }
 func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {
 	fmt.Printf("%+v", app.setting)
-	// sender, err := app.setting.Setting("SenderCompID")
-	// if err != nil {
-	// 	panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	// }
-	// target, err := app.setting.Setting("TargetCompID")
-	// if err != nil {
-	// 	panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	// }
+	sender, err := app.setting.Setting("SenderCompID")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
+	target, err := app.setting.Setting("TargetCompID")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
 
-	// clientID, err := app.setting.Setting("ClientID")
-	// if err != nil {
-	// 	panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	// }
+	clientID, err := app.setting.Setting("ClientID")
+	if err != nil {
+		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	}
 
 	mdID := app.genMDID()
 	request := fix42mdr.New(mdID,
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES),
 		field.NewMarketDepth(0),
 	)
-	request.SetSenderCompID("395u")
-	request.SetTargetCompID("JLQD")
-	request.Header.SetString(quickfix.Tag(109), "testcpt2")
+	request.SetSenderCompID(sender)
+	request.SetTargetCompID(target)
+	request.Header.SetString(quickfix.Tag(109), clientID)
 
 	// entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
 	// entryTypes.Add().SetMDEntryType(enum.MDEntryType_FIXING_PRICE)
