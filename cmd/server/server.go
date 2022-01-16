@@ -228,7 +228,7 @@ func (app *Application) subscribe() {
 	if symbol, ok := app.symbols["BTCUSD"]; ok {
 		msg := app.makeFix42MarketDataRequest(symbol)
 		err := quickfix.SendToTarget(msg, sessionID)
-		fmt.Printf(">>> [%+v] \n", msg)
+		fmt.Printf("subscribe >>> [%+v] \n", msg)
 		if err != nil {
 			fmt.Printf("XXX> Error SendToTarget : %v,", err)
 		}
