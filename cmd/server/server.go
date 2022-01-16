@@ -67,7 +67,7 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 	if price, err := msg.GetString(quickfix.Tag(270)); err != nil {
 		fmt.Println("GOT YOU >>>>>>>>>>>>>>>>>>>>> ", price)
 	}
-	panic("PANICE TO SEE ME")
+	panic("PANICE TO NOTED WHEN GOT THIS")
 	if entries, err := msg.GetNoMDEntries(); err == nil {
 		spew.Dump(entries)
 	}
