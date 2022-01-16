@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -223,6 +224,7 @@ func start(cfgFileName string) error {
 
 func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
+	time.Sleep(5 * time.Second)
 	msg := app.makeFix42MarketDataRequest("SOLUSD")
 	err := quickfix.SendToTarget(msg, sessionID)
 	fmt.Printf("subscribe >>> [%+v] \n", msg)
