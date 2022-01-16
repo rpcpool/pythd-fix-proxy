@@ -252,28 +252,28 @@ func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *qu
 }
 func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {
 	fmt.Printf("%+v", app.setting)
-	sender, err := app.setting.Setting("SenderCompID")
-	if err != nil {
-		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	}
-	target, err := app.setting.Setting("TargetCompID")
-	if err != nil {
-		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	}
+	// sender, err := app.setting.Setting("SenderCompID")
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	// }
+	// target, err := app.setting.Setting("TargetCompID")
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	// }
 
-	clientID, err := app.setting.Setting("ClientID")
-	if err != nil {
-		panic(fmt.Sprintf("Miss SenderCompID %+v", err))
-	}
+	// clientID, err := app.setting.Setting("ClientID")
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Miss SenderCompID %+v", err))
+	// }
 
 	mdID := app.genMDID()
 	request := fix42mdr.New(mdID,
 		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES),
 		field.NewMarketDepth(0),
 	)
-	request.SetSenderCompID(sender)
-	request.SetTargetCompID(target)
-	request.Header.SetString(quickfix.Tag(109), clientID)
+	request.SetSenderCompID("395u")
+	request.SetTargetCompID("JLQD")
+	request.Header.SetString(quickfix.Tag(109), "testcpt2")
 
 	// entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
 	// entryTypes.Add().SetMDEntryType(enum.MDEntryType_FIXING_PRICE)
