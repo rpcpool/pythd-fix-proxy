@@ -122,7 +122,7 @@ func (a *Application) OnCreate(sessionID quickfix.SessionID) {
 
 func (a *Application) OnLogon(sessionID quickfix.SessionID) {
 	fmt.Println("OnLogon")
-	msg := fix42sdr.New(a.genSecurityID(), field.NewSecurityRequestType(enum.SecurityRequestType_REQUEST_LIST_SECURITIES))
+	msg := fix42sdr.New(a.genSecurityID(), field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL))
 	a.sessionID <- sessionID
 	err := quickfix.SendToTarget(msg, sessionID)
 	if err != nil {
