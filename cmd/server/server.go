@@ -230,11 +230,8 @@ func (app *Application) subscribe() {
 		<-t.C
 		msg := app.makeFix42MarketDataRequest("SOLUSD")
 		err := quickfix.SendToTarget(msg, sessionID)
-		fmt.Printf("subscribe >>> [%+v] \n", msg)
 		if err != nil {
 			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
-		} else {
-			fmt.Printf(">>>> OK %+v \n", msg)
 		}
 	}
 	// // NOTED: Tick only BTC now for testing
