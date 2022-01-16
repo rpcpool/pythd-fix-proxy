@@ -231,6 +231,8 @@ func (app *Application) subscribe() {
 		fmt.Printf("subscribe >>> [%+v] \n", msg)
 		if err != nil {
 			fmt.Printf("XXX> Error SendToTarget : %v,", err)
+		} else {
+			fmt.Printf(">>>> OK %+v \n", msg)
 		}
 	}
 
