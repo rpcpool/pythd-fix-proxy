@@ -277,7 +277,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	mdID := app.genMDID()
 
 	request := fix42mdr.New(mdID,
-		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_DISABLE_PREVIOUS_SNAPSHOT_PLUS_UPDATE_REQUEST),
+		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES),
 		field.NewMarketDepth(0),
 	)
 	request.SetSenderCompID(sender)
