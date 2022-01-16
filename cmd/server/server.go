@@ -160,6 +160,7 @@ func (a *Application) FromAdmin(message *quickfix.Message, sessionID quickfix.Se
 
 //Notification of app message being received from target.
 func (a *Application) FromApp(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	fmt.Printf("\n>>>>>>>> [%+v] \n", message)
 	return a.Route(message, sessionID)
 }
 
@@ -225,7 +226,7 @@ func start(cfgFileName string) error {
 func (app *Application) crank() {
 	sessionID := <-app.sessionID
 
-	tick := time.Tick(10 * time.Second)
+	tick := time.Tick(30 * time.Second)
 	for {
 		<-tick
 		// NOTED: Tick only SOL now for testing
@@ -284,7 +285,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	request.SetString(quickfix.Tag(146), "1")
 	request.Header.SetString(quickfix.Tag(5000), "0")
 
-	request.SetMDUpdateType(enum.MDUpdateType_INCREMENTAL_REFRESH)
+	request.SetMDUpdateType(enum.MDUpdateType_FULL_REFRESH)
 
 	return request.ToMessage()
 }
