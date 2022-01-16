@@ -225,15 +225,17 @@ func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
 
 	// NOTED: Tick only BTC now for testing
-	if symbol, ok := app.symbols["BTCUSD"]; ok {
+	if symbol, ok := app.symbols["SOLUSD"]; ok {
 		msg := app.makeFix42MarketDataRequest(symbol)
 		err := quickfix.SendToTarget(msg, sessionID)
 		fmt.Printf("subscribe >>> [%+v] \n", msg)
 		if err != nil {
-			fmt.Printf("XXX> Error SendToTarget : %v,", err)
+			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
 		} else {
 			fmt.Printf(">>>> OK %+v \n", msg)
 		}
+	} else {
+		fmt.Printf("\n>>>>>> CAN NOT HAVE SYMBOL \n")
 	}
 
 	// if symbol, ok := app.symbols["BTCUSD"]; ok {
