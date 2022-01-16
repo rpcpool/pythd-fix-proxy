@@ -224,14 +224,18 @@ func start(cfgFileName string) error {
 
 func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
-	time.Sleep(5 * time.Second)
-	msg := app.makeFix42MarketDataRequest("SOLUSD")
-	err := quickfix.SendToTarget(msg, sessionID)
-	fmt.Printf("subscribe >>> [%+v] \n", msg)
-	if err != nil {
-		fmt.Printf(">>>>> Error SendToTarget : %v,", err)
-	} else {
-		fmt.Printf(">>>> OK %+v \n", msg)
+
+	t := time.NewTicker(5 * time.Second)
+	for {
+		<-t.C
+		msg := app.makeFix42MarketDataRequest("SOLUSD")
+		err := quickfix.SendToTarget(msg, sessionID)
+		fmt.Printf("subscribe >>> [%+v] \n", msg)
+		if err != nil {
+			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
+		} else {
+			fmt.Printf(">>>> OK %+v \n", msg)
+		}
 	}
 	// // NOTED: Tick only BTC now for testing
 	// if symbol, ok := app.symbols["SOLUSD"]; ok {
