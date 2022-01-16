@@ -225,7 +225,7 @@ func start(cfgFileName string) error {
 func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
 
-	t := time.NewTicker(5 * time.Second)
+	t := time.NewTicker(15 * time.Second)
 	for {
 		<-t.C
 		msg := app.makeFix42MarketDataRequest("SOLUSD")
@@ -275,8 +275,9 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	}
 
 	mdID := app.genMDID()
+
 	request := fix42mdr.New(mdID,
-		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_SNAPSHOT_PLUS_UPDATES),
+		field.NewSubscriptionRequestType(enum.SubscriptionRequestType_DISABLE_PREVIOUS_SNAPSHOT_PLUS_UPDATE_REQUEST),
 		field.NewMarketDepth(0),
 	)
 	request.SetSenderCompID(sender)
@@ -294,7 +295,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	// request.SetString(quickfix.Tag(146), "1")
 	request.SetString(quickfix.Tag(5000), "0")
 
-	request.SetMDUpdateType(enum.MDUpdateType_FULL_REFRESH)
+	request.SetMDUpdateType(enum.MDUpdateType_INCREMENTAL_REFRESH)
 
 	return request.ToMessage()
 }
