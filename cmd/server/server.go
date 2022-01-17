@@ -221,7 +221,7 @@ func (app *Application) subscribe() {
 
 	time.Sleep(10 * time.Second)
 	fmt.Printf("\n SYMSBOLS [%+v] \n", app.symbols)
-	if symbol, ok := app.symbols["SOLUSD"]; ok {
+	if symbol, ok := app.symbols["s1EURJPY"]; ok {
 		msg := app.makeFix42MarketDataRequest(symbol)
 		err := quickfix.SendToTarget(msg, sessionID)
 		if err != nil {
@@ -277,7 +277,7 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
 
-	request.SetString(quickfix.Tag(5000), "2")
+	request.SetString(quickfix.Tag(5000), "0")
 	// request.SetString(quickfix.Tag(5008), "10")
 
 	request.SetMDUpdateType(enum.MDUpdateType_INCREMENTAL_REFRESH)
