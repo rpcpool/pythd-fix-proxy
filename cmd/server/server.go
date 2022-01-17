@@ -221,13 +221,21 @@ func (app *Application) subscribe() {
 
 	time.Sleep(10 * time.Second)
 	fmt.Printf("\n SYMSBOLS [%+v] \n", app.symbols)
-	if symbol, ok := app.symbols["s1EURJPY"]; ok {
-		msg := app.makeFix42MarketDataRequest(symbol)
+	for k, _ := range app.symbols {
+		time.Sleep(1 * time.Second)
+		msg := app.makeFix42MarketDataRequest(k)
 		err := quickfix.SendToTarget(msg, sessionID)
 		if err != nil {
 			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
 		}
 	}
+	// if symbol, ok := app.symbols["s1EURJPY"]; ok {
+	// 	msg := app.makeFix42MarketDataRequest(symbol)
+	// 	err := quickfix.SendToTarget(msg, sessionID)
+	// 	if err != nil {
+	// 		fmt.Printf(">>>>> Error SendToTarget : %v,", err)
+	// 	}
+	// }
 }
 
 func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *quickfix.Message {
