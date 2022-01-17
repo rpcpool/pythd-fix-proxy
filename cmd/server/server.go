@@ -219,11 +219,11 @@ func start(cfgFileName string) error {
 func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
 
+	fmt.Printf("\n SYMSBOLS [%+v] \n", app.symbols)
 	t := time.NewTicker(5 * time.Second)
 	for {
 		<-t.C
 		if symbol, ok := app.symbols["SOLUSD"]; ok {
-			fmt.Printf("[%+v] \n", app.symbols)
 			msg := app.makeFix42MarketDataRequest(symbol)
 			err := quickfix.SendToTarget(msg, sessionID)
 			if err != nil {
@@ -231,20 +231,7 @@ func (app *Application) subscribe() {
 			}
 		}
 	}
-	// // NOTED: Tick only BTC now for testing
-	// if symbol, ok := app.symbols["SOLUSD"]; ok {
 
-	// } else {
-	// 	fmt.Printf("\n>>>>>> CAN NOT HAVE SYMBOL \n")
-	// }
-
-	// if symbol, ok := app.symbols["BTCUSD"]; ok {
-	// 	msg := app.makeFix42MarketDataIncrementalRefresh(symbol)
-	// 	err := quickfix.SendToTarget(msg, sessionID)
-	// 	if err != nil {
-	// 		fmt.Printf("XXX> Error SendToTarget : %v,", err)
-	// 	}
-	// }
 }
 
 func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *quickfix.Message {
