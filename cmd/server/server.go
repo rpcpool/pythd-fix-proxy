@@ -268,6 +268,9 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
 	entryTypes.Add().SetMDEntryType(enum.MDEntryType_TRADE)
 	entryTypes.Add().SetMDEntryType(enum.MDEntryType_SETTLE_HIGH_PRICE)
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_OPENING_PRICE)
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_EARLY_PRICES)
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_FIXING_PRICE)
 	request.SetNoMDEntryTypes(entryTypes)
 
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
