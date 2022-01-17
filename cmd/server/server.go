@@ -237,7 +237,15 @@ func (app *Application) subscribe() {
 			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
 		}
 	}
-	if symbol, ok := app.symbols["BTCSGD"]; ok {
+	if symbol, ok := app.symbols["ETHUSD"]; ok {
+		msg := app.makeFix42MarketDataRequest(symbol)
+		err := quickfix.SendToTarget(msg, sessionID)
+		if err != nil {
+			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
+		}
+	}
+
+	if symbol, ok := app.symbols["SOLUSD"]; ok {
 		msg := app.makeFix42MarketDataRequest(symbol)
 		err := quickfix.SendToTarget(msg, sessionID)
 		if err != nil {
