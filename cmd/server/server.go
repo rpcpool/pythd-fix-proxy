@@ -222,11 +222,13 @@ func (app *Application) subscribe() {
 	t := time.NewTicker(5 * time.Second)
 	for {
 		<-t.C
-		fmt.Printf("[%+v] \n", app.symbols)
-		msg := app.makeFix42MarketDataRequest("SOLUSD")
-		err := quickfix.SendToTarget(msg, sessionID)
-		if err != nil {
-			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
+		if symbol, ok := app.symbols["SOLUSD"]; ok {
+			fmt.Printf("[%+v] \n", app.symbols)
+			msg := app.makeFix42MarketDataRequest(symbol)
+			err := quickfix.SendToTarget(msg, sessionID)
+			if err != nil {
+				fmt.Printf(">>>>> Error SendToTarget : %v,", err)
+			}
 		}
 	}
 	// // NOTED: Tick only BTC now for testing
