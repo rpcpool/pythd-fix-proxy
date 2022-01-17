@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -220,15 +219,11 @@ func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
 
 	fmt.Printf("\n SYMSBOLS [%+v] \n", app.symbols)
-	t := time.NewTicker(5 * time.Second)
-	for {
-		<-t.C
-		if symbol, ok := app.symbols["SOLUSD"]; ok {
-			msg := app.makeFix42MarketDataRequest(symbol)
-			err := quickfix.SendToTarget(msg, sessionID)
-			if err != nil {
-				fmt.Printf(">>>>> Error SendToTarget : %v,", err)
-			}
+	if symbol, ok := app.symbols["SOLUSD"]; ok {
+		msg := app.makeFix42MarketDataRequest(symbol)
+		err := quickfix.SendToTarget(msg, sessionID)
+		if err != nil {
+			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
 		}
 	}
 
