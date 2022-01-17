@@ -65,7 +65,7 @@ func newApp() *Application {
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh  \n")
 	if price, err := msg.GetString(quickfix.Tag(270)); err != nil {
-		fmt.Println("GOT YOU >>>>>>>>>>>>>>>>>>>>> ", price)
+		fmt.Println("LOG PRICE >>> ", price)
 	}
 	panic("PANICE TO NOTED WHEN GOT THIS")
 }
@@ -84,7 +84,7 @@ func (a *Application) OnFIX42MarketDataSnapshotFullRefresh(msg fix42mdsfr.Market
 	fmt.Printf("ON OnFIX42MarketDataSnapshotFullRefresh \n %+v \n", msg)
 
 	if price, err := msg.GetString(quickfix.Tag(270)); err != nil {
-		fmt.Println("GOT YOU >>>>>>>>>>>>>>>>>>>>> ", price)
+		fmt.Println("LOG PRICE >>> ", price)
 	}
 	return nil
 }
