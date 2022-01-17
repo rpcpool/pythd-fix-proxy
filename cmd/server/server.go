@@ -15,7 +15,6 @@ import (
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
 
-	"github.com/davecgh/go-spew/spew"
 	fix42er "github.com/quickfixgo/fix42/executionreport"
 	fix42lo "github.com/quickfixgo/fix42/logon"
 	fix42mdir "github.com/quickfixgo/fix42/marketdataincrementalrefresh"
@@ -69,11 +68,6 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 		fmt.Println("GOT YOU >>>>>>>>>>>>>>>>>>>>> ", price)
 	}
 	panic("PANICE TO NOTED WHEN GOT THIS")
-	if entries, err := msg.GetNoMDEntries(); err == nil {
-		spew.Dump(entries)
-	}
-
-	return nil
 }
 
 func (a *Application) OnFIX42MarketDataRequest(msg fix42mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
@@ -292,10 +286,9 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	relatedSym.Add().SetSymbol(symbol)
 	request.SetNoRelatedSym(relatedSym)
 
-	// request.SetString(quickfix.Tag(146), "1")
 	request.SetString(quickfix.Tag(5000), "0")
 
-	request.SetMDUpdateType(enum.MDUpdateType_FULL_REFRESH)
+	request.SetMDUpdateType(enum.MDUpdateType_INCREMENTAL_REFRESH)
 
 	return request.ToMessage()
 }
