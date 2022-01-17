@@ -65,9 +65,10 @@ func newApp() *Application {
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh  \n")
 	if price, err := msg.GetString(quickfix.Tag(270)); err != nil {
-		fmt.Println("LOG PRICE >>> ", price)
+		fmt.Println(">>>>>>>>>>>>>>XX LOG PRICE >>> ", price)
 	}
-	panic("PANICE TO NOTED WHEN GOT THIS")
+
+	return nil
 }
 
 func (a *Application) OnFIX42MarketDataRequest(msg fix42mdr.MarketDataRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
@@ -221,21 +222,28 @@ func (app *Application) subscribe() {
 
 	time.Sleep(10 * time.Second)
 	fmt.Printf("\n SYMSBOLS [%+v] \n", app.symbols)
-	for k, _ := range app.symbols {
-		time.Sleep(1 * time.Second)
-		msg := app.makeFix42MarketDataRequest(k)
-		err := quickfix.SendToTarget(msg, sessionID)
-		if err != nil {
-			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
-		}
-	}
-	// if symbol, ok := app.symbols["s1EURJPY"]; ok {
-	// 	msg := app.makeFix42MarketDataRequest(symbol)
+	// for k, _ := range app.symbols {
+	// 	time.Sleep(1 * time.Second)
+	// 	msg := app.makeFix42MarketDataRequest(k)
 	// 	err := quickfix.SendToTarget(msg, sessionID)
 	// 	if err != nil {
 	// 		fmt.Printf(">>>>> Error SendToTarget : %v,", err)
 	// 	}
 	// }
+	if symbol, ok := app.symbols["BTCUSD"]; ok {
+		msg := app.makeFix42MarketDataRequest(symbol)
+		err := quickfix.SendToTarget(msg, sessionID)
+		if err != nil {
+			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
+		}
+	}
+	if symbol, ok := app.symbols["BTCSGD"]; ok {
+		msg := app.makeFix42MarketDataRequest(symbol)
+		err := quickfix.SendToTarget(msg, sessionID)
+		if err != nil {
+			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
+		}
+	}
 }
 
 func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *quickfix.Message {
