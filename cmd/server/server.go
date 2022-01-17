@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -218,6 +219,7 @@ func start(cfgFileName string) error {
 func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
 
+	time.Sleep(10 * time.Second)
 	fmt.Printf("\n SYMSBOLS [%+v] \n", app.symbols)
 	if symbol, ok := app.symbols["SOLUSD"]; ok {
 		msg := app.makeFix42MarketDataRequest(symbol)
@@ -226,7 +228,6 @@ func (app *Application) subscribe() {
 			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
 		}
 	}
-
 }
 
 func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *quickfix.Message {
