@@ -219,9 +219,10 @@ func start(cfgFileName string) error {
 func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
 
-	t := time.NewTicker(15 * time.Second)
+	t := time.NewTicker(5 * time.Second)
 	for {
 		<-t.C
+		fmt.Printf("[%+v] \n", app.symbols)
 		msg := app.makeFix42MarketDataRequest("SOLUSD")
 		err := quickfix.SendToTarget(msg, sessionID)
 		if err != nil {
