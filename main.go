@@ -30,31 +30,35 @@ func main() {
 	done := make(chan struct{})
 
 	// Using FIX price feeds
-	priceFeedCh, err := fix.Start(*cfgFileName, done)
-	if err != nil {
-		log.Panicf("Err start FIX %+v \n", err)
-	}
+	// priceFeedCh, err := fix.Start(*cfgFileName, done)
+	// if err != nil {
+	// 	log.Panicf("Err start FIX %+v \n", err)
+	// }
 
-	/// Using fake price feeds
-	// priceFeedCh := make(chan fix.PriceFeed, 1000)
-	// go func() {
-	// 	t := time.Tick(time.Second)
-	// 	for {
-	// 		<-t
-	// 		priceFeedCh <- fix.PriceFeed{
-	// 			Symbol: "SOLUSD",
-	// 			Price:  "137",
-	// 		}
-	// 		priceFeedCh <- fix.PriceFeed{
-	// 			Symbol: "BCHUSD",
-	// 			Price:  "379",
-	// 		}
-	// 		priceFeedCh <- fix.PriceFeed{
-	// 			Symbol: "ADAUSD",
-	// 			Price:  "1.45",
-	// 		}
-	// 	}
-	// }()
+	// Using fake price feeds
+	priceFeedCh := make(chan fix.PriceFeed, 1000)
+	go func() {
+		t := time.Tick(time.Second)
+		for {
+			<-t
+			priceFeedCh <- fix.PriceFeed{
+				Symbol: "SOLUSD",
+				Price:  "137",
+			}
+			priceFeedCh <- fix.PriceFeed{
+				Symbol: "BCHUSD",
+				Price:  "379",
+			}
+			priceFeedCh <- fix.PriceFeed{
+				Symbol: "ADAUSD",
+				Price:  "1.45",
+			}
+			priceFeedCh <- fix.PriceFeed{
+				Symbol: "DOTUSD",
+				Price:  "24.7",
+			}
+		}
+	}()
 
 	u := url.URL{Scheme: "ws", Host: *addr, Path: "/"}
 	log.Printf("connecting to %s", u.String())
