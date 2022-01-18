@@ -1,16 +1,12 @@
-package main
+package fix
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"strconv"
 	"sync"
-	"syscall"
-	"time"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -26,14 +22,25 @@ import (
 	"github.com/quickfixgo/quickfix"
 )
 
+var WhileListSymbol []string = []string{"BTCUSD"}
+
+type PriceFeed struct {
+	Symbol string
+	Price  string
+}
 type Application struct {
 	mdReqID    int
 	securityID int
 	sessionID  chan quickfix.SessionID
+	priceChan  chan PriceFeed
 	symbols    map[string]string
 	mu         sync.Mutex
 	setting    *quickfix.SessionSettings
 	*quickfix.MessageRouter
+}
+
+func (a *Application) GetPriceChan() <-chan PriceFeed {
+	return a.priceChan
 }
 
 func (app *Application) genSecurityID() field.SecurityReqIDField {
@@ -51,6 +58,7 @@ func newApp() *Application {
 		MessageRouter: quickfix.NewMessageRouter(),
 		symbols:       make(map[string]string),
 		sessionID:     make(chan quickfix.SessionID, 1),
+		priceChan:     make(chan PriceFeed, 1000),
 	}
 	app.AddRoute(fix42er.Route(app.OnFIX42ExecutionReport))
 	app.AddRoute(fix42sd.Route(app.OnFIX42SecurityDefinition))
@@ -64,10 +72,20 @@ func newApp() *Application {
 
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh  \n")
-	if price, err := msg.GetString(quickfix.Tag(270)); err != nil {
-		fmt.Println(">>>>>>>>>>>>>>XX LOG PRICE >>> ", price)
+	price, err := msg.GetString(quickfix.Tag(270))
+	if err != nil {
+		return err
 	}
 
+	symbol, err := msg.GetString(quickfix.Tag(55))
+	if err != nil {
+		return err
+	}
+
+	a.priceChan <- PriceFeed{
+		Symbol: symbol,
+		Price:  price,
+	}
 	return nil
 }
 
@@ -162,29 +180,20 @@ type executor struct {
 	*quickfix.MessageRouter
 }
 
-var cfgFileName = flag.String("cfg", "config.cfg", "Acceptor config file")
-
-func main() {
-	flag.Parse()
-	if err := start(*cfgFileName); err != nil {
-		fmt.Println("Err start acceptor ", err)
-	}
-}
-
-func start(cfgFileName string) error {
+func Start(cfgFileName string, done <-chan struct{}) (<-chan PriceFeed, error) {
 	cfg, err := os.Open(cfgFileName)
 	if err != nil {
-		return fmt.Errorf("Error opening %v, %v\n", cfgFileName, err)
+		return nil, fmt.Errorf("Error opening %v, %v\n", cfgFileName, err)
 	}
 	defer cfg.Close()
 	stringData, readErr := ioutil.ReadAll(cfg)
 	if readErr != nil {
-		return fmt.Errorf("Error reading cfg: %s,", readErr)
+		return nil, fmt.Errorf("Error reading cfg: %s,", readErr)
 	}
 
 	appSettings, err := quickfix.ParseSettings(bytes.NewReader(stringData))
 	if err != nil {
-		return fmt.Errorf("Error reading cfg: %s,", err)
+		return nil, fmt.Errorf("Error reading cfg: %s,", err)
 	}
 
 	app := newApp()
@@ -198,68 +207,39 @@ func start(cfgFileName string) error {
 
 	quickApp, err := quickfix.NewInitiator(app, quickfix.NewMemoryStoreFactory(), appSettings, logFactory)
 	if err != nil {
-		return fmt.Errorf("Unable to create Acceptor: %s\n", err)
+		return nil, fmt.Errorf("Unable to create Acceptor: %s\n", err)
 	}
 
 	err = quickApp.Start()
 	if err != nil {
-		return fmt.Errorf("Unable to start Acceptor: %s\n", err)
+		return nil, fmt.Errorf("Unable to start Acceptor: %s\n", err)
 	}
 
-	go app.subscribe()
+	app.subscribe()
+	go func() {
+		<-done
+		close(app.priceChan)
+		quickApp.Stop()
+	}()
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-	<-interrupt
-
-	quickApp.Stop()
-
-	return nil
+	return app.GetPriceChan(), nil
 }
 
 func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
 
-	time.Sleep(10 * time.Second)
-	fmt.Printf("\n SYMSBOLS [%+v] \n", app.symbols)
-	// for k, _ := range app.symbols {
-	// 	time.Sleep(1 * time.Second)
-	// 	msg := app.makeFix42MarketDataRequest(k)
-	// 	err := quickfix.SendToTarget(msg, sessionID)
-	// 	if err != nil {
-	// 		fmt.Printf(">>>>> Error SendToTarget : %v,", err)
-	// 	}
-	// }
-	// if symbol, ok := app.symbols["BTCUSD"]; ok {
-	// 	msg := app.makeFix42MarketDataRequest(symbol)
-	// 	err := quickfix.SendToTarget(msg, sessionID)
-	// 	if err != nil {
-	// 		fmt.Printf(">>>>> Error SendToTarget : %v,", err)
-	// 	}
-	// }
-	// if symbol, ok := app.symbols["ETHUSD"]; ok {
-	// 	msg := app.makeFix42MarketDataRequest(symbol)
-	// 	err := quickfix.SendToTarget(msg, sessionID)
-	// 	if err != nil {
-	// 		fmt.Printf(">>>>> Error SendToTarget : %v,", err)
-	// 	}
-	// }
-
-	if symbol, ok := app.symbols["SOLUSD"]; ok {
-		msg := app.makeFix42MarketDataRequest(symbol)
-		err := quickfix.SendToTarget(msg, sessionID)
-		if err != nil {
-			fmt.Printf(">>>>> Error SendToTarget : %v,", err)
+	fmt.Printf("\n WhileListSymbol [%+v] \n", WhileListSymbol)
+	for _, v := range WhileListSymbol {
+		if symbol, ok := app.symbols[v]; ok {
+			msg := app.makeFix42MarketDataRequest(symbol)
+			err := quickfix.SendToTarget(msg, sessionID)
+			if err != nil {
+				fmt.Printf(">>>>> Error SendToTarget : %v,", err)
+			}
+		} else {
+			fmt.Printf("Our symbol not supported by jump: %s \n", v)
 		}
 	}
-}
-
-func (app *Application) makeFix42MarketDataIncrementalRefresh(symbol string) *quickfix.Message {
-	_msg := app.makeFix42MarketDataRequest(symbol)
-
-	request := fix42mdir.FromMessage(_msg)
-
-	return request.ToMessage()
 }
 
 func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Message {

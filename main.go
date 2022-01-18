@@ -8,22 +8,66 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/gorilla/websocket"
 
+	"github.com/rpcpool/pythd-fix-proxy/pkg/fix"
 	"github.com/ybbus/jsonrpc/v2"
 )
 
 var addr = flag.String("addr", "localhost:8910", "http service address")
 
-func main() {
-	flag.Parse()
-	log.SetFlags(0)
+var cfgFileName = flag.String("cfg", "config.cfg", "Acceptor config file")
 
+func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, os.Kill)
 
+	flag.Parse()
+	log.SetFlags(0)
+
+	// startPyth()
+	done := make(chan struct{})
+	defer close(done)
+
+	prices, err := fix.Start(*cfgFileName, done)
+	if err != nil {
+		fmt.Printf("Err start FIX %+v \n", err)
+		return
+	}
+
+	go func() {
+		for price := range prices {
+			fmt.Printf("GOT THE PRICe: %+v", price)
+		}
+	}()
+
+	<-interrupt
+	log.Println("interrupt")
+
+	// select {
+	// case <-done:
+	// 	return
+	// case <-interrupt:
+	// 	log.Println("interrupt")
+
+	// 	// Cleanly close the connection by sending a close message and then
+	// 	// waiting (with timeout) for the server to close the connection.
+	// 	err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	// 	if err != nil {
+	// 		log.Println("write close:", err)
+	// 		return
+	// 	}
+	// 	select {
+	// 	case <-done:
+	// 	case <-time.After(time.Second):
+	// 	}
+	// 	return
+	// }
+}
+
+func startPyth() <-chan struct{} {
+	done := make(chan struct{})
 	u := url.URL{Scheme: "ws", Host: *addr, Path: "/"}
 	log.Printf("connecting to %s", u.String())
 
@@ -32,8 +76,6 @@ func main() {
 		log.Fatal("dial:", err)
 	}
 	defer conn.Close()
-
-	done := make(chan struct{})
 
 	go func() {
 		defer close(done)
@@ -47,9 +89,6 @@ func main() {
 		}
 	}()
 
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-
 	// err = sendListProductRq(conn)
 
 	// if err != nil {
@@ -61,28 +100,8 @@ func main() {
 	err = sendUpdatePriceRq(conn, "33ugpDWbC2mLrYSQvu1BHfykR8bt3MVc4S3YuuXMVRH3", 169920000, 730000, "trading")
 	if err != nil {
 		log.Printf("Err %+vn", err)
-		return
 	}
-
-	select {
-	case <-done:
-		return
-	case <-interrupt:
-		log.Println("interrupt")
-
-		// Cleanly close the connection by sending a close message and then
-		// waiting (with timeout) for the server to close the connection.
-		err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-		if err != nil {
-			log.Println("write close:", err)
-			return
-		}
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-		}
-		return
-	}
+	return done
 }
 
 func sendUpdatePriceRq(conn *websocket.Conn, account string, price uint64, conf uint32, status string) error {
