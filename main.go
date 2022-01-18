@@ -12,14 +12,13 @@ import (
 
 	"github.com/gorilla/websocket"
 
+	"github.com/rpcpool/pythd-fix-proxy/pkg/fix"
 	"github.com/ybbus/jsonrpc/v2"
 )
 
 var addr = flag.String("addr", "localhost:8910", "http service address")
 
 var cfgFileName = flag.String("cfg", "config.cfg", "Acceptor config file")
-
-const BTCPriceAccount = "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
 
 func main() {
 	interrupt := make(chan os.Signal, 1)
@@ -30,21 +29,32 @@ func main() {
 
 	done := make(chan struct{})
 
-	/// Using FIX price feeds
-	// prices, err := fix.Start(*cfgFileName, done)
-	// if err != nil {
-	// 	log.Panicf("Err start FIX %+v \n", err)
-	// }
+	// Using FIX price feeds
+	priceFeedCh, err := fix.Start(*cfgFileName, done)
+	if err != nil {
+		log.Panicf("Err start FIX %+v \n", err)
+	}
 
 	/// Using fake price feeds
-	prices := make(chan struct{ Price string }, 1000)
-	go func() {
-		t := time.Tick(time.Second)
-		for {
-			<-t
-			prices <- struct{ Price string }{"41899"}
-		}
-	}()
+	// priceFeedCh := make(chan fix.PriceFeed, 1000)
+	// go func() {
+	// 	t := time.Tick(time.Second)
+	// 	for {
+	// 		<-t
+	// 		priceFeedCh <- fix.PriceFeed{
+	// 			Symbol: "SOLUSD",
+	// 			Price:  "137",
+	// 		}
+	// 		priceFeedCh <- fix.PriceFeed{
+	// 			Symbol: "BCHUSD",
+	// 			Price:  "379",
+	// 		}
+	// 		priceFeedCh <- fix.PriceFeed{
+	// 			Symbol: "ADAUSD",
+	// 			Price:  "1.45",
+	// 		}
+	// 	}
+	// }()
 
 	u := url.URL{Scheme: "ws", Host: *addr, Path: "/"}
 	log.Printf("connecting to %s", u.String())
@@ -54,6 +64,8 @@ func main() {
 		log.Fatal("dial:", err)
 	}
 	defer conn.Close()
+
+	priceAccountMap, err := sendListProductRq(conn)
 
 	go func() {
 		defer close(done)
@@ -68,13 +80,18 @@ func main() {
 	}()
 
 	go func() {
-		for price := range prices {
-			fmt.Printf("GOT THE PRICe: %+v", price)
-
-			err = sendUpdatePriceRq(conn, BTCPriceAccount, price.Price, 730000, "trading")
-			if err != nil {
-				log.Printf("Err %+vn", err)
+		if err != nil {
+			log.Panicf("Can not have price account list %+v", err)
+		}
+		for priceFeed := range priceFeedCh {
+			fmt.Printf("GOT Price feed: %+v", priceFeed)
+			if priceAccount, ok := priceAccountMap[priceFeed.Symbol]; ok {
+				err = sendUpdatePriceRq(conn, priceAccount, priceFeed.Price, 730000, "trading")
+				if err != nil {
+					log.Printf("Err %+vn", err)
+				}
 			}
+
 		}
 		fmt.Println("Pricechan ended")
 	}()
@@ -100,21 +117,23 @@ func main() {
 	}
 }
 
-func sendUpdatePriceRq(conn *websocket.Conn, account string, price string, conf uint32, status string) error {
-	params := make(map[string]interface{}, 0)
-	params["account"] = account
-	params["price"] = price
-	params["conf"] = conf
-	params["status"] = status
+func sendUpdatePriceRq(conn *websocket.Conn, accounts []string, price string, conf uint32, status string) error {
+	for _, account := range accounts {
+		params := make(map[string]interface{}, 0)
+		params["account"] = account
+		params["price"] = price
+		params["conf"] = conf
+		params["status"] = status
 
-	updatePriceRq := jsonrpc.NewRequest("update_price", params)
-	b, err := json.Marshal(updatePriceRq)
-	if err != nil {
-		return fmt.Errorf("Err marsharl updatePriceRq %+v", err)
-	}
-	err = conn.WriteMessage(websocket.TextMessage, b)
-	if err != nil {
-		return fmt.Errorf("Err Write  update_price %+v", err)
+		updatePriceRq := jsonrpc.NewRequest("update_price", params)
+		b, err := json.Marshal(updatePriceRq)
+		if err != nil {
+			return fmt.Errorf("Err marsharl updatePriceRq %+v", err)
+		}
+		err = conn.WriteMessage(websocket.TextMessage, b)
+		if err != nil {
+			return fmt.Errorf("Err Write  update_price %+v", err)
+		}
 	}
 	return nil
 }
@@ -136,16 +155,56 @@ func sendSubscribePriceRq(conn *websocket.Conn, account string) error {
 	return nil
 }
 
-func sendListProductRq(conn *websocket.Conn) error {
+func sendListProductRq(conn *websocket.Conn) (map[string][]string, error) {
 	productListRq := jsonrpc.NewRequest("get_product_list", nil)
 	b, err := json.Marshal(productListRq)
 	if err != nil {
-		return fmt.Errorf("Err marsharl getProductList %+v", err)
+		return nil, fmt.Errorf("Err marsharl getProductList %+v", err)
 	}
 
 	err = conn.WriteMessage(websocket.TextMessage, b)
 	if err != nil {
-		return fmt.Errorf("Err Write get_product_list %+v", err)
+		return nil, fmt.Errorf("Err Write get_product_list %+v", err)
 	}
-	return nil
+
+	_, data, err := conn.ReadMessage()
+	if err != nil {
+		return nil, fmt.Errorf("Err ReadMessage %+v", err)
+	}
+	var response RPCResponse
+	err = json.Unmarshal(data, &response)
+	if err != nil {
+		return nil, fmt.Errorf("Err Unmarshal %+v", err)
+	}
+
+	mPriceAccounts := make(map[string][]string)
+	for _, result := range response.Result {
+		if v, ok := result.AttrDict["generic_symbol"]; ok {
+			priceAccounts := make([]string, len(result.Price))
+			for i, _v := range result.Price {
+				priceAccounts[i] = _v.Account
+			}
+			mPriceAccounts[v] = priceAccounts
+		}
+	}
+	return mPriceAccounts, nil
+}
+
+type RPCResponse struct {
+	JSONRPC string            `json:"jsonrpc"`
+	Result  []Result          `json:"result,omitempty"`
+	Error   *jsonrpc.RPCError `json:"error,omitempty"`
+	ID      int               `json:"id"`
+}
+
+type Result struct {
+	Account  string            `json:"account,omitempty"`
+	AttrDict map[string]string `json:"attr_dict,omitempty"`
+	Price    []Price           `json:"price,omitempty"`
+}
+
+type Price struct {
+	Account       string `json:"account,omitempty"`
+	PriceExponent int32  `json:"price_exponent,omitempty"`
+	PriceType     string `json:"price_type,omitempty"`
 }
