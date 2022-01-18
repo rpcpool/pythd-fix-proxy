@@ -12,13 +12,14 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/rpcpool/pythd-fix-proxy/pkg/fix"
 	"github.com/ybbus/jsonrpc/v2"
 )
 
 var addr = flag.String("addr", "localhost:8910", "http service address")
 
 var cfgFileName = flag.String("cfg", "config.cfg", "Acceptor config file")
+
+const BTCPriceAccount = "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
 
 func main() {
 	interrupt := make(chan os.Signal, 1)
@@ -27,52 +28,24 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
-	// startPyth()
 	done := make(chan struct{})
 
-	prices, err := fix.Start(*cfgFileName, done)
-	if err != nil {
-		log.Panicf("Err start FIX %+v \n", err)
-	}
+	/// Using FIX price feeds
+	// prices, err := fix.Start(*cfgFileName, done)
+	// if err != nil {
+	// 	log.Panicf("Err start FIX %+v \n", err)
+	// }
 
+	/// Using fake price feeds
+	prices := make(chan struct{ Price string }, 1000)
 	go func() {
-		for price := range prices {
-			fmt.Printf("GOT THE PRICe: %+v", price)
+		t := time.Tick(time.Second)
+		for {
+			<-t
+			prices <- struct{ Price string }{"41899"}
 		}
-		fmt.Println("Pricechan ended")
 	}()
 
-	// <-interrupt
-	// fmt.Println("interrupt")
-	// select {
-	// case <-done:
-	// case <-time.After(time.Second):
-	// }
-	// fmt.Println("exited")
-
-	select {
-	case <-done:
-		return
-	case <-interrupt:
-		log.Println("interrupt")
-
-		// Cleanly close the connection by sending a close message and then
-		// waiting (with timeout) for the server to close the connection.
-		// err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-		// if err != nil {
-		// 	log.Println("write close:", err)
-		// 	return
-		// }
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-		}
-		return
-	}
-}
-
-func startPyth() <-chan struct{} {
-	done := make(chan struct{})
 	u := url.URL{Scheme: "ws", Host: *addr, Path: "/"}
 	log.Printf("connecting to %s", u.String())
 
@@ -94,22 +67,40 @@ func startPyth() <-chan struct{} {
 		}
 	}()
 
-	// err = sendListProductRq(conn)
+	go func() {
+		for price := range prices {
+			fmt.Printf("GOT THE PRICe: %+v", price)
 
-	// if err != nil {
-	// 	log.Printf("Err %+vn", err)
-	// 	return
-	// }
+			err = sendUpdatePriceRq(conn, BTCPriceAccount, price.Price, 730000, "trading")
+			if err != nil {
+				log.Printf("Err %+vn", err)
+			}
+		}
+		fmt.Println("Pricechan ended")
+	}()
 
-	// TODO: should be check get data from FIX
-	err = sendUpdatePriceRq(conn, "33ugpDWbC2mLrYSQvu1BHfykR8bt3MVc4S3YuuXMVRH3", 169920000, 730000, "trading")
-	if err != nil {
-		log.Printf("Err %+vn", err)
+	select {
+	case <-done:
+		return
+	case <-interrupt:
+		log.Println("interrupt")
+
+		// Cleanly close the connection by sending a close message and then
+		// waiting (with timeout) for the server to close the connection.
+		err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+		if err != nil {
+			log.Println("write close:", err)
+			return
+		}
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+		}
+		return
 	}
-	return done
 }
 
-func sendUpdatePriceRq(conn *websocket.Conn, account string, price uint64, conf uint32, status string) error {
+func sendUpdatePriceRq(conn *websocket.Conn, account string, price string, conf uint32, status string) error {
 	params := make(map[string]interface{}, 0)
 	params["account"] = account
 	params["price"] = price

@@ -72,7 +72,6 @@ func newApp() *Application {
 }
 
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	fmt.Printf("ON OnFIX42MarketDataIncrementalRefresh  \n")
 	price, err := msg.GetString(quickfix.Tag(270))
 	if err != nil {
 		return err
