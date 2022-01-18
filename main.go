@@ -29,12 +29,10 @@ func main() {
 
 	// startPyth()
 	done := make(chan struct{})
-	defer close(done)
 
 	prices, err := fix.Start(*cfgFileName, done)
 	if err != nil {
-		fmt.Printf("Err start FIX %+v \n", err)
-		return
+		log.Panicf("Err start FIX %+v \n", err)
 	}
 
 	go func() {
@@ -44,33 +42,33 @@ func main() {
 		fmt.Println("Pricechan ended")
 	}()
 
-	<-interrupt
-	fmt.Println("interrupt")
-	select {
-	case <-done:
-	case <-time.After(time.Second):
-	}
-	fmt.Println("exited")
-
+	// <-interrupt
+	// fmt.Println("interrupt")
 	// select {
 	// case <-done:
-	// 	return
-	// case <-interrupt:
-	// 	log.Println("interrupt")
-
-	// 	// Cleanly close the connection by sending a close message and then
-	// 	// waiting (with timeout) for the server to close the connection.
-	// 	err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	// 	if err != nil {
-	// 		log.Println("write close:", err)
-	// 		return
-	// 	}
-	// 	select {
-	// 	case <-done:
-	// 	case <-time.After(time.Second):
-	// 	}
-	// 	return
+	// case <-time.After(time.Second):
 	// }
+	// fmt.Println("exited")
+
+	select {
+	case <-done:
+		return
+	case <-interrupt:
+		log.Println("interrupt")
+
+		// Cleanly close the connection by sending a close message and then
+		// waiting (with timeout) for the server to close the connection.
+		// err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+		// if err != nil {
+		// 	log.Println("write close:", err)
+		// 	return
+		// }
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+		}
+		return
+	}
 }
 
 func startPyth() <-chan struct{} {
