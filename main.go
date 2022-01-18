@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -44,7 +45,12 @@ func main() {
 	}()
 
 	<-interrupt
-	log.Println("interrupt")
+	fmt.Println("interrupt")
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+	}
+	fmt.Println("exited")
 
 	// select {
 	// case <-done:
