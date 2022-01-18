@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -229,6 +230,7 @@ func (app *Application) subscribe() {
 	sessionID := <-app.sessionID
 
 	fmt.Printf("\n WhileListSymbol [%+v] \n", WhileListSymbol)
+	time.Sleep(5 * time.Second)
 	for _, v := range WhileListSymbol {
 		if symbol, ok := app.symbols[v]; ok {
 			msg := app.makeFix42MarketDataRequest(symbol)
