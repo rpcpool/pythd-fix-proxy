@@ -219,6 +219,8 @@ func Start(cfgFileName string, done <-chan struct{}) (<-chan PriceFeed, error) {
 	app.subscribe()
 	go func() {
 		<-done
+		fmt.Println("Stopped quickapp")
+		fmt.Println("Close Pricechan")
 		close(app.priceChan)
 		quickApp.Stop()
 	}()

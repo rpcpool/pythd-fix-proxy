@@ -40,6 +40,7 @@ func main() {
 		for price := range prices {
 			fmt.Printf("GOT THE PRICe: %+v", price)
 		}
+		fmt.Println("Pricechan ended")
 	}()
 
 	<-interrupt
