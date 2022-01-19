@@ -18,8 +18,6 @@ import (
 
 var addr = flag.String("addr", "localhost:8910", "http service address")
 
-var whileList map[string]bool = map[string]bool{"ADAUSD": true, "BCHUSD": true, "DOTUSD": true}
-
 var cfgFileName = flag.String("cfg", "config.cfg", "Acceptor config file")
 
 func main() {
@@ -91,7 +89,7 @@ func main() {
 		}
 		for priceFeed := range priceFeedCh {
 			fmt.Printf("GOT Price feed: %+v", priceFeed)
-			if _, ok := whileList[priceFeed.Symbol]; !ok {
+			if _, ok := fix.WhileListSymbol[priceFeed.Symbol]; !ok {
 				// fmt.Println("We not process to pyth ", priceFeed.Symbol)
 				continue
 			}

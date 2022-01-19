@@ -23,7 +23,7 @@ import (
 	"github.com/quickfixgo/quickfix"
 )
 
-var WhileListSymbol []string = []string{"BTCUSD"}
+var WhileListSymbol map[string]bool = map[string]bool{"ADAUSD": true, "BCHUSD": true, "DOTUSD": true}
 
 type PriceFeed struct {
 	Symbol string
@@ -232,7 +232,7 @@ func (app *Application) subscribe() {
 
 	fmt.Printf("\n WhileListSymbol [%+v] \n", WhileListSymbol)
 	time.Sleep(5 * time.Second)
-	for _, v := range WhileListSymbol {
+	for v := range WhileListSymbol {
 		if symbol, ok := app.symbols[v]; ok {
 			msg := app.makeFix42MarketDataRequest(symbol)
 			err := quickfix.SendToTarget(msg, sessionID)
