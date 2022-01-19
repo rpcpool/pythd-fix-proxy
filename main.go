@@ -18,6 +18,8 @@ import (
 
 var addr = flag.String("addr", "localhost:8910", "http service address")
 
+var whileList map[string]bool = map[string]bool{"ADAUSD": true, "BCHUSD": true, "DOTUSD": true}
+
 var cfgFileName = flag.String("cfg", "config.cfg", "Acceptor config file")
 
 func main() {
@@ -30,35 +32,35 @@ func main() {
 	done := make(chan struct{})
 
 	// Using FIX price feeds
-	// priceFeedCh, err := fix.Start(*cfgFileName, done)
-	// if err != nil {
-	// 	log.Panicf("Err start FIX %+v \n", err)
-	// }
+	priceFeedCh, err := fix.Start(*cfgFileName, done)
+	if err != nil {
+		log.Panicf("Err start FIX %+v \n", err)
+	}
 
 	// Using fake price feeds
-	priceFeedCh := make(chan fix.PriceFeed, 1000)
-	go func() {
-		t := time.Tick(time.Second)
-		for {
-			<-t
-			priceFeedCh <- fix.PriceFeed{
-				Symbol: "SOLUSD",
-				Price:  "137",
-			}
-			priceFeedCh <- fix.PriceFeed{
-				Symbol: "BCHUSD",
-				Price:  "379",
-			}
-			priceFeedCh <- fix.PriceFeed{
-				Symbol: "ADAUSD",
-				Price:  "1.45",
-			}
-			priceFeedCh <- fix.PriceFeed{
-				Symbol: "DOTUSD",
-				Price:  "24.7",
-			}
-		}
-	}()
+	// priceFeedCh := make(chan fix.PriceFeed, 1000)
+	// go func() {
+	// 	t := time.Tick(time.Second)
+	// 	for {
+	// 		<-t
+	// 		priceFeedCh <- fix.PriceFeed{
+	// 			Symbol: "SOLUSD",
+	// 			Price:  "137",
+	// 		}
+	// 		priceFeedCh <- fix.PriceFeed{
+	// 			Symbol: "BCHUSD",
+	// 			Price:  "379",
+	// 		}
+	// 		priceFeedCh <- fix.PriceFeed{
+	// 			Symbol: "ADAUSD",
+	// 			Price:  "1.45",
+	// 		}
+	// 		priceFeedCh <- fix.PriceFeed{
+	// 			Symbol: "DOTUSD",
+	// 			Price:  "24.7",
+	// 		}
+	// 	}
+	// }()
 
 	u := url.URL{Scheme: "ws", Host: *addr, Path: "/"}
 	log.Printf("connecting to %s", u.String())
@@ -89,13 +91,17 @@ func main() {
 		}
 		for priceFeed := range priceFeedCh {
 			fmt.Printf("GOT Price feed: %+v", priceFeed)
+			if _, ok := whileList[priceFeed.Symbol]; !ok {
+				fmt.Println("We not process to pyth ", priceFeed.Symbol)
+				continue
+			}
+
 			if priceAccount, ok := priceAccountMap[priceFeed.Symbol]; ok {
 				err = sendUpdatePriceRq(conn, priceAccount, priceFeed.Price, 730000, "trading")
 				if err != nil {
 					log.Printf("Err %+vn", err)
 				}
 			}
-
 		}
 		fmt.Println("Pricechan ended")
 	}()
