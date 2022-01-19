@@ -2,6 +2,7 @@ package fix
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
+
+	_ "embed"
 
 	fix42er "github.com/quickfixgo/fix42/executionreport"
 	fix42lo "github.com/quickfixgo/fix42/logon"
@@ -23,7 +26,21 @@ import (
 	"github.com/quickfixgo/quickfix"
 )
 
-var WhileListSymbol map[string]bool = map[string]bool{"ADAUSD": true, "BCHUSD": true, "DOTUSD": true}
+//go:embed white_list.json
+var whiteListData []byte
+
+func init() {
+	err := json.Unmarshal(whiteListData, &WhileListSymbol)
+	if err != nil {
+		panic("Can not Unmarshal whitelist")
+	}
+
+	fmt.Println("Whitelist: ", WhileListSymbol)
+}
+
+var WhileListSymbol map[string]bool
+
+// var WhileListSymbol map[string]bool = map[string]bool{"ADAUSD": true, "BCHUSD": true, "DOTUSD": true}
 
 type PriceFeed struct {
 	Symbol string
