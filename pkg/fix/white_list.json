@@ -1,5 +1,7 @@
 {
   "ADAUSD": true,
   "BCHUSD": true,
-  "DOTUSD": true
+  "DOTUSD": true,
+  "BTCUSD": false,
+  "ETHUSD": false
 }

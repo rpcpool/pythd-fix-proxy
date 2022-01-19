@@ -64,8 +64,7 @@ func main() {
 		}
 		for priceFeed := range priceFeedCh {
 			fmt.Printf("GOT Price feed: %+v", priceFeed)
-			if _, ok := fix.WhileListSymbol[priceFeed.Symbol]; !ok {
-				// fmt.Println("We not process to pyth ", priceFeed.Symbol)
+			if enable, ok := fix.WhileListSymbol[priceFeed.Symbol]; !ok || !enable {
 				continue
 			}
 
