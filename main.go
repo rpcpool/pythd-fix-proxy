@@ -92,11 +92,12 @@ func main() {
 		for priceFeed := range priceFeedCh {
 			fmt.Printf("GOT Price feed: %+v", priceFeed)
 			if _, ok := whileList[priceFeed.Symbol]; !ok {
-				fmt.Println("We not process to pyth ", priceFeed.Symbol)
+				// fmt.Println("We not process to pyth ", priceFeed.Symbol)
 				continue
 			}
 
 			if priceAccount, ok := priceAccountMap[priceFeed.Symbol]; ok {
+				fmt.Println(">>> Process to Pyth ", priceFeed.Symbol)
 				err = sendUpdatePriceRq(conn, priceAccount, priceFeed.Price, 730000, "trading")
 				if err != nil {
 					log.Printf("Err %+vn", err)
