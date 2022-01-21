@@ -289,7 +289,8 @@ func (app *Application) makeFix42MarketDataRequest(symbol string) *quickfix.Mess
 	request.SetString(quickfix.Tag(109), clientID)
 
 	entryTypes := fix42mdr.NewNoMDEntryTypesRepeatingGroup()
-	entryTypes.Add().SetMDEntryType(enum.MDEntryType_TRADE)
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_BID)
+	entryTypes.Add().SetMDEntryType(enum.MDEntryType_OFFER)
 	request.SetNoMDEntryTypes(entryTypes)
 
 	relatedSym := fix42mdr.NewNoRelatedSymRepeatingGroup()
