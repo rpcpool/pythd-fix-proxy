@@ -49,14 +49,14 @@ type PriceFeed struct {
 	Side   int
 }
 type Application struct {
-	mdReqID    int
-	securityID int
-	sessionID  chan quickfix.SessionID
-	priceChan  chan PriceFeed
-	symbols    map[string]string
-	MDReqIDs   map[int][]PriceFeed
-	mu         sync.Mutex
-	setting    *quickfix.SessionSettings
+	mdReqID       int
+	securityID    int
+	sessionID     chan quickfix.SessionID
+	priceChan     chan PriceFeed
+	symbols       map[string]string
+	priceFeedsMap map[int][]PriceFeed
+	mu            sync.Mutex
+	setting       *quickfix.SessionSettings
 	*quickfix.MessageRouter
 }
 
@@ -80,7 +80,7 @@ func newApp() *Application {
 		symbols:       make(map[string]string),
 		sessionID:     make(chan quickfix.SessionID, 1),
 		priceChan:     make(chan PriceFeed, 1000),
-		MDReqIDs:      make(map[int][]PriceFeed),
+		priceFeedsMap: make(map[int][]PriceFeed),
 	}
 	app.AddRoute(fix42er.Route(app.OnFIX42ExecutionReport))
 	app.AddRoute(fix42sd.Route(app.OnFIX42SecurityDefinition))
@@ -119,13 +119,7 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 
 	price := int64(math.Round(f))
 
-	// a.priceChan <- PriceFeed{
-	// 	Symbol: symbol,
-	// 	Price:  price,
-	// 	Side:   side,
-	// }
-
-	a.MDReqIDs[MDReqID] = append(a.MDReqIDs[MDReqID], PriceFeed{
+	a.priceFeedsMap[MDReqID] = append(a.priceFeedsMap[MDReqID], PriceFeed{
 		Symbol: symbol,
 		Price:  price,
 		Side:   side,
@@ -263,19 +257,19 @@ func Start(cfgFileName string, done <-chan struct{}) (<-chan PriceFeed, error) {
 	go func() {
 		for {
 			time.Sleep(time.Second)
-			for k, v := range app.MDReqIDs {
-				if len(v) > 0 {
+			for mdID, feedArray := range app.priceFeedsMap {
+				if len(feedArray) > 0 {
 					var total int
-					for _, _v := range v {
-						total += int(_v.Price)
+					for _, feed := range feedArray {
+						total += int(feed.Price)
 					}
-					avg_price := total / len(v)
+					avg_price := total / len(feedArray)
 
 					app.priceChan <- PriceFeed{
-						Symbol: v[0].Symbol,
+						Symbol: feedArray[0].Symbol,
 						Price:  int64(avg_price),
 					}
-					delete(app.MDReqIDs, k)
+					delete(app.priceFeedsMap, mdID)
 				}
 			}
 		}
