@@ -44,7 +44,8 @@ var WhileListSymbol map[string]bool
 
 type PriceFeed struct {
 	Symbol string
-	Price  string
+	Price  int
+	Side   int
 }
 type Application struct {
 	mdReqID    int
@@ -52,6 +53,7 @@ type Application struct {
 	sessionID  chan quickfix.SessionID
 	priceChan  chan PriceFeed
 	symbols    map[string]string
+	MDReqIDs   map[int][]PriceFeed
 	mu         sync.Mutex
 	setting    *quickfix.SessionSettings
 	*quickfix.MessageRouter
@@ -77,6 +79,7 @@ func newApp() *Application {
 		symbols:       make(map[string]string),
 		sessionID:     make(chan quickfix.SessionID, 1),
 		priceChan:     make(chan PriceFeed, 1000),
+		MDReqIDs:      make(map[int][]PriceFeed),
 	}
 	app.AddRoute(fix42er.Route(app.OnFIX42ExecutionReport))
 	app.AddRoute(fix42sd.Route(app.OnFIX42SecurityDefinition))
@@ -89,16 +92,19 @@ func newApp() *Application {
 }
 
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	price, err := msg.GetString(quickfix.Tag(270))
+	price, err := msg.GetInt(quickfix.Tag(270))
 	if err != nil {
 		return err
 	}
-	gr, err := msg.GetNoMDEntries()
+	side, err := msg.GetInt(quickfix.Tag(269))
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("GetNoMDEntries %+v \n", gr)
+	// MDReqID, err := msg.GetInt(quickfix.Tag(262))
+	// if err != nil {
+	// 	return err
+	// }
 
 	symbol, err := msg.GetString(quickfix.Tag(55))
 	if err != nil {
@@ -108,6 +114,7 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 	a.priceChan <- PriceFeed{
 		Symbol: symbol,
 		Price:  price,
+		Side:   side,
 	}
 	return nil
 }
