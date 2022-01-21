@@ -44,7 +44,7 @@ var WhileListSymbol map[string]bool
 
 type PriceFeed struct {
 	Symbol string
-	Price  int
+	Price  int64
 	Side   int
 }
 type Application struct {
@@ -92,7 +92,7 @@ func newApp() *Application {
 }
 
 func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDataIncrementalRefresh, sessionID quickfix.SessionID) quickfix.MessageRejectError {
-	price, err := msg.GetInt(quickfix.Tag(270))
+	price_str, err := msg.GetString(quickfix.Tag(270))
 	if err != nil {
 		return err
 	}
@@ -111,6 +111,10 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 		return err
 	}
 
+	price, _err := strconv.ParseInt(price_str, 10, 64)
+	if _err != nil {
+		panic(err)
+	}
 	a.priceChan <- PriceFeed{
 		Symbol: symbol,
 		Price:  price,
