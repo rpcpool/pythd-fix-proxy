@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"sync"
@@ -45,7 +46,7 @@ var WhileListSymbol map[string]bool
 
 type PriceFeed struct {
 	Symbol string
-	Price  int
+	Price  int64
 	Side   int
 }
 type Application struct {
@@ -112,7 +113,12 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 		return err
 	}
 
-	price, _err := strconv.Atoi(price_str)
+	f, _err := strconv.ParseFloat(price_str, 64)
+	if _err != nil {
+		return quickfix.IncorrectDataFormatForValue(quickfix.Tag(270))
+	}
+
+	price := int64(math.Round(f))
 	if _err != nil {
 		log.Panicf("ERR: %+v price: %s", err, price_str)
 	}
