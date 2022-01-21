@@ -93,6 +93,12 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 	if err != nil {
 		return err
 	}
+	gr, err := msg.GetNoMDEntries()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("GetNoMDEntries %+v \n", gr)
 
 	symbol, err := msg.GetString(quickfix.Tag(55))
 	if err != nil {
