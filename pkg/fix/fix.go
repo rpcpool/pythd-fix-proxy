@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math"
 	"os"
 	"strconv"
@@ -103,10 +102,10 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 		return err
 	}
 
-	// MDReqID, err := msg.GetInt(quickfix.Tag(262))
-	// if err != nil {
-	// 	return err
-	// }
+	MDReqID, err := msg.GetInt(quickfix.Tag(262))
+	if err != nil {
+		return err
+	}
 
 	symbol, err := msg.GetString(quickfix.Tag(55))
 	if err != nil {
@@ -119,15 +118,18 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 	}
 
 	price := int64(math.Round(f))
-	if _err != nil {
-		log.Panicf("ERR: %+v price: %s", err, price_str)
-	}
 
-	a.priceChan <- PriceFeed{
+	// a.priceChan <- PriceFeed{
+	// 	Symbol: symbol,
+	// 	Price:  price,
+	// 	Side:   side,
+	// }
+
+	a.MDReqIDs[MDReqID] = append(a.MDReqIDs[MDReqID], PriceFeed{
 		Symbol: symbol,
 		Price:  price,
 		Side:   side,
-	}
+	})
 	return nil
 }
 
@@ -258,6 +260,26 @@ func Start(cfgFileName string, done <-chan struct{}) (<-chan PriceFeed, error) {
 	}
 
 	app.subscribe()
+	go func() {
+		for {
+			time.Sleep(time.Second)
+			for k, v := range app.MDReqIDs {
+				if len(v) > 0 {
+					var total int
+					for _, _v := range v {
+						total += int(_v.Price)
+					}
+					avg_price := total / len(v)
+
+					app.priceChan <- PriceFeed{
+						Symbol: v[0].Symbol,
+						Price:  int64(avg_price),
+					}
+					delete(app.MDReqIDs, k)
+				}
+			}
+		}
+	}()
 	go func() {
 		<-done
 		fmt.Println("Stopped quickapp")
