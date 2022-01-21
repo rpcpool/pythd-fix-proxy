@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"sync"
@@ -113,7 +114,7 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 
 	price, _err := strconv.Atoi(price_str)
 	if _err != nil {
-		panic(err)
+		log.Panicf("ERR: %+v price: %s", err, price_str)
 	}
 
 	a.priceChan <- PriceFeed{
