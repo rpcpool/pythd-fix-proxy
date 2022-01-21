@@ -100,7 +100,7 @@ func main() {
 	}
 }
 
-func sendUpdatePriceRq(conn *websocket.Conn, accounts []string, price int, conf uint32, status string) error {
+func sendUpdatePriceRq(conn *websocket.Conn, accounts []string, price int64, conf uint32, status string) error {
 	for _, account := range accounts {
 		params := make(map[string]interface{}, 0)
 		params["account"] = account
