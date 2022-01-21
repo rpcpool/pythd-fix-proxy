@@ -44,7 +44,7 @@ var WhileListSymbol map[string]bool
 
 type PriceFeed struct {
 	Symbol string
-	Price  int64
+	Price  int
 	Side   int
 }
 type Application struct {
@@ -111,10 +111,11 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 		return err
 	}
 
-	price, _err := strconv.ParseInt(price_str, 10, 64)
+	price, _err := strconv.Atoi(price_str)
 	if _err != nil {
 		panic(err)
 	}
+
 	a.priceChan <- PriceFeed{
 		Symbol: symbol,
 		Price:  price,
