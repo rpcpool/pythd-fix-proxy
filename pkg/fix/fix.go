@@ -45,8 +45,9 @@ var WhileListSymbol map[string]bool
 
 type PriceFeed struct {
 	Symbol string
+	side   int
 	Price  int64
-	Side   int
+	Conf   int32
 }
 type Application struct {
 	mdReqID       int
@@ -54,7 +55,7 @@ type Application struct {
 	sessionID     chan quickfix.SessionID
 	priceChan     chan PriceFeed
 	symbols       map[string]string
-	priceFeedsMap map[int][]PriceFeed
+	priceFeedsMap map[string][]PriceFeed
 	mu            sync.Mutex
 	setting       *quickfix.SessionSettings
 	*quickfix.MessageRouter
@@ -80,7 +81,7 @@ func newApp() *Application {
 		symbols:       make(map[string]string),
 		sessionID:     make(chan quickfix.SessionID, 1),
 		priceChan:     make(chan PriceFeed, 1000),
-		priceFeedsMap: make(map[int][]PriceFeed),
+		priceFeedsMap: make(map[string][]PriceFeed),
 	}
 	app.AddRoute(fix42er.Route(app.OnFIX42ExecutionReport))
 	app.AddRoute(fix42sd.Route(app.OnFIX42SecurityDefinition))
@@ -102,10 +103,10 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 		return err
 	}
 
-	MDReqID, err := msg.GetInt(quickfix.Tag(262))
-	if err != nil {
-		return err
-	}
+	// MDReqID, err := msg.GetInt(quickfix.Tag(262))
+	// if err != nil {
+	// 	return err
+	// }
 
 	symbol, err := msg.GetString(quickfix.Tag(55))
 	if err != nil {
@@ -117,12 +118,12 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 		return quickfix.IncorrectDataFormatForValue(quickfix.Tag(270))
 	}
 
-	price := int64(math.Round(f))
+	price := int64(math.Round(f * 100)) // 2 decimals
 
-	a.priceFeedsMap[MDReqID] = append(a.priceFeedsMap[MDReqID], PriceFeed{
+	a.priceFeedsMap[symbol] = append(a.priceFeedsMap[symbol], PriceFeed{
 		Symbol: symbol,
 		Price:  price,
-		Side:   side,
+		side:   side,
 	})
 	return nil
 }
@@ -256,21 +257,38 @@ func Start(cfgFileName string, done <-chan struct{}) (<-chan PriceFeed, error) {
 	app.subscribe()
 	go func() {
 		for {
-			time.Sleep(time.Second)
-			for mdID, feedArray := range app.priceFeedsMap {
-				if len(feedArray) > 0 {
-					var total int
-					for _, feed := range feedArray {
-						total += int(feed.Price)
+			time.Sleep(time.Millisecond * 400)
+			for symbol, prices := range app.priceFeedsMap {
+				var bidTotal, askTotal int64
+				var bidCount, askCount int64
+				for _, price := range prices {
+					if price.side == 0 {
+						bidCount += 1
+						bidTotal += price.Price
+					} else if price.side == 1 {
+						askCount += 1
+						askTotal += price.Price
 					}
-					avg_price := total / len(feedArray)
-
-					app.priceChan <- PriceFeed{
-						Symbol: feedArray[0].Symbol,
-						Price:  int64(avg_price),
-					}
-					delete(app.priceFeedsMap, mdID)
 				}
+
+				if askCount == 0 || bidCount == 0 {
+					fmt.Println("Not enoughs side")
+					continue
+				}
+				bid := bidTotal / bidCount
+				ask := askTotal / bidCount
+				conf := math.Abs(float64(bid)-float64(ask)) / 2
+				app.priceChan <- PriceFeed{
+					Symbol: symbol,
+					Price:  bid,
+					Conf:   int32(conf),
+				}
+				app.priceChan <- PriceFeed{
+					Symbol: symbol,
+					Price:  ask,
+					Conf:   int32(conf),
+				}
+				delete(app.priceFeedsMap, symbol)
 			}
 		}
 	}()

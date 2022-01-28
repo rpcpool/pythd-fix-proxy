@@ -70,7 +70,7 @@ func main() {
 
 			if priceAccount, ok := priceAccountMap[priceFeed.Symbol]; ok {
 				fmt.Println(">>> Process to Pyth ", priceFeed.Symbol)
-				err = sendUpdatePriceRq(conn, priceAccount, priceFeed.Price, 730000, "trading")
+				err = sendUpdatePriceRq(conn, priceAccount, priceFeed.Price, uint32(priceFeed.Conf), "trading")
 				if err != nil {
 					log.Printf("Err %+vn", err)
 				}
