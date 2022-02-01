@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"net/url"
 	"os"
 	"os/signal"
@@ -100,11 +101,14 @@ func main() {
 	}
 }
 
-func sendUpdatePriceRq(conn *websocket.Conn, accounts []string, price int64, conf uint32, status string) error {
+func sendUpdatePriceRq(conn *websocket.Conn, accounts []PythPriceAccount, price float64, conf uint32, status string) error {
 	for _, account := range accounts {
+
+		price = price / math.Pow10(int(account.exponent))
+		priceInt := int64(math.Round(price))
 		params := make(map[string]interface{}, 0)
-		params["account"] = account
-		params["price"] = price
+		params["account"] = account.address
+		params["price"] = priceInt
 		params["conf"] = conf
 		params["status"] = status
 
@@ -139,7 +143,12 @@ func sendSubscribePriceRq(conn *websocket.Conn, account string) error {
 	return nil
 }
 
-func sendListProductRq(conn *websocket.Conn) (map[string][]string, error) {
+type PythPriceAccount struct {
+	address  string
+	exponent int
+}
+
+func sendListProductRq(conn *websocket.Conn) (map[string][]PythPriceAccount, error) {
 	productListRq := jsonrpc.NewRequest("get_product_list", nil)
 	b, err := json.Marshal(productListRq)
 	if err != nil {
@@ -161,12 +170,15 @@ func sendListProductRq(conn *websocket.Conn) (map[string][]string, error) {
 		return nil, fmt.Errorf("Err Unmarshal %+v", err)
 	}
 
-	mPriceAccounts := make(map[string][]string)
+	mPriceAccounts := make(map[string][]PythPriceAccount)
 	for _, result := range response.Result {
 		if v, ok := result.AttrDict["generic_symbol"]; ok {
-			priceAccounts := make([]string, len(result.Price))
+			priceAccounts := make([]PythPriceAccount, len(result.Price))
 			for i, _v := range result.Price {
-				priceAccounts[i] = _v.Account
+				priceAccounts[i] = PythPriceAccount{
+					address:  _v.Account,
+					exponent: _v.PriceExponent,
+				}
 			}
 			mPriceAccounts[v] = priceAccounts
 		}
@@ -189,6 +201,6 @@ type Result struct {
 
 type Price struct {
 	Account       string `json:"account,omitempty"`
-	PriceExponent int32  `json:"price_exponent,omitempty"`
+	PriceExponent int    `json:"price_exponent,omitempty"`
 	PriceType     string `json:"price_type,omitempty"`
 }

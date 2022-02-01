@@ -46,7 +46,7 @@ var WhileListSymbol map[string]bool
 type PriceFeed struct {
 	Symbol string
 	side   int
-	Price  int64
+	Price  float64
 	Conf   int32
 }
 type Application struct {
@@ -113,12 +113,10 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 		return err
 	}
 
-	f, _err := strconv.ParseFloat(price_str, 64)
+	price, _err := strconv.ParseFloat(price_str, 64)
 	if _err != nil {
 		return quickfix.IncorrectDataFormatForValue(quickfix.Tag(270))
 	}
-
-	price := int64(math.Round(f * 100)) // 2 decimals
 
 	a.priceFeedsMap[symbol] = append(a.priceFeedsMap[symbol], PriceFeed{
 		Symbol: symbol,
@@ -259,8 +257,8 @@ func Start(cfgFileName string, done <-chan struct{}) (<-chan PriceFeed, error) {
 		for {
 			time.Sleep(time.Millisecond * 400)
 			for symbol, prices := range app.priceFeedsMap {
-				var bidTotal, askTotal int64
-				var bidCount, askCount int64
+				var bidTotal, askTotal float64
+				var bidCount, askCount float64
 				for _, price := range prices {
 					if price.side == 0 {
 						bidCount += 1
