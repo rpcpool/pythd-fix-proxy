@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"os"
 	"strconv"
 	"sync"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
+	"github.com/shopspring/decimal"
 
 	_ "embed"
 
@@ -31,6 +31,7 @@ import (
 var whiteListData []byte
 
 func init() {
+
 	err := json.Unmarshal(whiteListData, &WhileListSymbol)
 	if err != nil {
 		panic("Can not Unmarshal whitelist")
@@ -46,8 +47,8 @@ var WhileListSymbol map[string]bool
 type PriceFeed struct {
 	Symbol string
 	side   int
-	Price  float64
-	Conf   float64
+	Price  decimal.Decimal
+	Conf   decimal.Decimal
 }
 type Application struct {
 	mdReqID       int
@@ -113,7 +114,8 @@ func (a *Application) OnFIX42MarketDataIncrementalRefresh(msg fix42mdir.MarketDa
 		return err
 	}
 
-	price, _err := strconv.ParseFloat(price_str, 64)
+	// price, _err := strconv.ParseFloat(price_str, 64)
+	price, _err := decimal.NewFromString(price_str) //strconv.ParseFloat(price_str, 64)
 	if _err != nil {
 		return quickfix.IncorrectDataFormatForValue(quickfix.Tag(270))
 	}
@@ -257,15 +259,15 @@ func Start(cfgFileName string, done <-chan struct{}) (<-chan PriceFeed, error) {
 		for {
 			time.Sleep(time.Millisecond * 400)
 			for symbol, prices := range app.priceFeedsMap {
-				var bidTotal, askTotal float64
-				var bidCount, askCount float64
+				var bidTotal, askTotal decimal.Decimal
+				var bidCount, askCount int64
 				for _, price := range prices {
 					if price.side == 0 {
+						bidTotal = bidTotal.Add(price.Price)
 						bidCount += 1
-						bidTotal += price.Price
 					} else if price.side == 1 {
 						askCount += 1
-						askTotal += price.Price
+						askTotal = askTotal.Add(price.Price)
 					}
 				}
 
@@ -273,9 +275,9 @@ func Start(cfgFileName string, done <-chan struct{}) (<-chan PriceFeed, error) {
 					fmt.Println("Not enoughs side")
 					continue
 				}
-				bid := bidTotal / bidCount
-				ask := askTotal / bidCount
-				conf := math.Abs(bid-ask) / 2
+				bid := bidTotal.Div(decimal.NewFromInt(bidCount))
+				ask := askTotal.Div(decimal.NewFromInt(askCount))
+				conf := bid.Sub(ask).Abs().Div(decimal.NewFromInt(2))
 				app.priceChan <- PriceFeed{
 					Symbol: symbol,
 					Price:  bid,

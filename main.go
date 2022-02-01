@@ -5,13 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math"
 	"net/url"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/shopspring/decimal"
 
 	"github.com/rpcpool/pythd-fix-proxy/pkg/fix"
 	"github.com/ybbus/jsonrpc/v2"
@@ -101,13 +101,12 @@ func main() {
 	}
 }
 
-func sendUpdatePriceRq(conn *websocket.Conn, accounts []PythPriceAccount, price float64, conf float64, status string) error {
+func sendUpdatePriceRq(conn *websocket.Conn, accounts []PythPriceAccount, price decimal.Decimal, conf decimal.Decimal, status string) error {
 	for _, account := range accounts {
-
-		_price := price / math.Pow10(int(account.exponent))
-		_conf := conf / math.Pow10(int(account.exponent))
-		priceInt := int64(math.Round(_price))
-		confInt := int64(math.Round(_conf))
+		_price := price.Shift(account.exponent)
+		_conf := conf.Shift(account.exponent)
+		priceInt := _price.StringFixed(0)
+		confInt := _conf.StringFixed(0)
 		params := make(map[string]interface{}, 0)
 		params["account"] = account.address
 		params["price"] = priceInt
@@ -117,6 +116,7 @@ func sendUpdatePriceRq(conn *websocket.Conn, accounts []PythPriceAccount, price 
 		updatePriceRq := jsonrpc.NewRequest("update_price", params)
 		b, err := json.Marshal(updatePriceRq)
 		fmt.Printf("Send updatePriceRq : [%+s] \n", b)
+		continue
 		if err != nil {
 			return fmt.Errorf("Err marsharl updatePriceRq %+v", err)
 		}
@@ -147,7 +147,7 @@ func sendSubscribePriceRq(conn *websocket.Conn, account string) error {
 
 type PythPriceAccount struct {
 	address  string
-	exponent int
+	exponent int32
 }
 
 func sendListProductRq(conn *websocket.Conn) (map[string][]PythPriceAccount, error) {
