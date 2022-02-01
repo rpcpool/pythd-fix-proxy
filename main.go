@@ -116,7 +116,6 @@ func sendUpdatePriceRq(conn *websocket.Conn, accounts []PythPriceAccount, price 
 		updatePriceRq := jsonrpc.NewRequest("update_price", params)
 		b, err := json.Marshal(updatePriceRq)
 		fmt.Printf("Send updatePriceRq : [%+s] \n", b)
-		continue
 		if err != nil {
 			return fmt.Errorf("Err marsharl updatePriceRq %+v", err)
 		}
