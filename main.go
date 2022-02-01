@@ -105,8 +105,8 @@ func sendUpdatePriceRq(conn *websocket.Conn, accounts []PythPriceAccount, price 
 	for _, account := range accounts {
 		_price := price.Shift(-account.exponent)
 		_conf := conf.Shift(-account.exponent)
-		priceInt := _price.StringFixed(0)
-		confInt := _conf.StringFixed(0)
+		priceInt := _price.IntPart()
+		confInt := _conf.IntPart()
 		params := make(map[string]interface{}, 0)
 		params["account"] = account.address
 		params["price"] = priceInt
