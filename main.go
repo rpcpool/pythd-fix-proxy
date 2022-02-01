@@ -103,8 +103,8 @@ func main() {
 
 func sendUpdatePriceRq(conn *websocket.Conn, accounts []PythPriceAccount, price decimal.Decimal, conf decimal.Decimal, status string) error {
 	for _, account := range accounts {
-		_price := price.Shift(account.exponent)
-		_conf := conf.Shift(account.exponent)
+		_price := price.Shift(-account.exponent)
+		_conf := conf.Shift(-account.exponent)
 		priceInt := _price.StringFixed(0)
 		confInt := _conf.StringFixed(0)
 		params := make(map[string]interface{}, 0)
