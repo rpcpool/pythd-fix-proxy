@@ -203,6 +203,6 @@ type Result struct {
 
 type Price struct {
 	Account       string `json:"account,omitempty"`
-	PriceExponent int    `json:"price_exponent,omitempty"`
+	PriceExponent int32  `json:"price_exponent,omitempty"`
 	PriceType     string `json:"price_type,omitempty"`
 }
