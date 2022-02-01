@@ -47,7 +47,7 @@ type PriceFeed struct {
 	Symbol string
 	side   int
 	Price  float64
-	Conf   int32
+	Conf   float64
 }
 type Application struct {
 	mdReqID       int
@@ -275,16 +275,16 @@ func Start(cfgFileName string, done <-chan struct{}) (<-chan PriceFeed, error) {
 				}
 				bid := bidTotal / bidCount
 				ask := askTotal / bidCount
-				conf := math.Abs(float64(bid)-float64(ask)) / 2
+				conf := math.Abs(bid-ask) / 2
 				app.priceChan <- PriceFeed{
 					Symbol: symbol,
 					Price:  bid,
-					Conf:   int32(conf),
+					Conf:   conf,
 				}
 				app.priceChan <- PriceFeed{
 					Symbol: symbol,
 					Price:  ask,
-					Conf:   int32(conf),
+					Conf:   conf,
 				}
 				delete(app.priceFeedsMap, symbol)
 			}

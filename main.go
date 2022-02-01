@@ -71,7 +71,7 @@ func main() {
 
 			if priceAccount, ok := priceAccountMap[priceFeed.Symbol]; ok {
 				fmt.Println(">>> Process to Pyth ", priceFeed.Symbol)
-				err = sendUpdatePriceRq(conn, priceAccount, priceFeed.Price, uint32(priceFeed.Conf), "trading")
+				err = sendUpdatePriceRq(conn, priceAccount, priceFeed.Price, priceFeed.Conf, "trading")
 				if err != nil {
 					log.Printf("Err %+vn", err)
 				}
@@ -101,15 +101,17 @@ func main() {
 	}
 }
 
-func sendUpdatePriceRq(conn *websocket.Conn, accounts []PythPriceAccount, price float64, conf uint32, status string) error {
+func sendUpdatePriceRq(conn *websocket.Conn, accounts []PythPriceAccount, price float64, conf float64, status string) error {
 	for _, account := range accounts {
 
-		price = price / math.Pow10(int(account.exponent))
-		priceInt := int64(math.Round(price))
+		_price := price / math.Pow10(int(account.exponent))
+		_conf := conf / math.Pow10(int(account.exponent))
+		priceInt := int64(math.Round(_price))
+		confInt := int64(math.Round(_conf))
 		params := make(map[string]interface{}, 0)
 		params["account"] = account.address
 		params["price"] = priceInt
-		params["conf"] = conf
+		params["conf"] = confInt
 		params["status"] = status
 
 		updatePriceRq := jsonrpc.NewRequest("update_price", params)
